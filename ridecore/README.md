@@ -128,6 +128,26 @@ npm test && npm run build
 git push
 ```
 
+## Releasing
+
+RIDECORE's releases are GitHub pre-releases on praneth2580/RIDECORE, tagged
+`ridecore-v<version>` so they never clash with TrailCompass's `v<version>` tags.
+TrailCompass's `npm run release:*` is not for RIDECORE: it bumps TrailCompass's version
+lines and titles the release "TrailCompass". The APK's version name comes from
+`ridecore/version.gradle`, leaving `build.gradle` alone:
+
+```bash
+npm run build && npx cap sync android
+cd android && ./gradlew assembleDebug --init-script ../ridecore/version.gradle -Pridecore.versionName=0.1.0-alpha.2
+cp app/build/outputs/apk/debug/app-debug.apk ridecore-0.1.0-alpha.2.apk
+git tag ridecore-v0.1.0-alpha.2 && git push origin main ridecore-v0.1.0-alpha.2
+gh release create ridecore-v0.1.0-alpha.2 ridecore-0.1.0-alpha.2.apk --prerelease --title "RIDECORE 0.1.0-alpha.2"
+```
+
+APKs are debug-signed with this machine's debug key, as TrailCompass's are. A phone
+only installs a newer APK over an older one signed with the same key, so build every
+release on the same machine, or set up a release key.
+
 ## Where RIDECORE edits TrailCompass's files
 
 Keep this list short and current. These are the only places a merge can conflict.

@@ -1,0 +1,16 @@
+// RIDECORE's version on its APKs, without touching TrailCompass's build.gradle (its
+// versionName line changes with every TrailCompass release, so editing it would conflict).
+//
+//   ./gradlew assembleDebug --init-script ../ridecore/version.gradle -Pridecore.versionName=0.1.0-alpha.1
+//
+// Without -Pridecore.versionName the build keeps build.gradle's version.
+allprojects {
+    pluginManager.withPlugin('com.android.application') {
+        def name = providers.gradleProperty('ridecore.versionName')
+        extensions.getByName('androidComponents').onVariants(extensions.getByName('androidComponents').selector().all()) { variant ->
+            if (name.present) {
+                variant.outputs.each { output -> output.versionName.set(name.get()) }
+            }
+        }
+    }
+}
