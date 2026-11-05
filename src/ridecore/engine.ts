@@ -30,6 +30,7 @@ export { rideLogService, type LiveRide } from '../services/ride-log.service';
 export { routeLibrary } from '../services/route-library.service';
 export { voiceGuidance } from '../services/voice-guidance.service';
 export { createTripStop } from '../types/trip-stop';
+export { mapTheme } from '../theme/map-theme';
 export type { RideRecord } from '../database/ride-repository';
 export type { TripPlannerState } from '../services/trip-planner.service';
 export type { Coordinate } from '../routing/routing-adapter';

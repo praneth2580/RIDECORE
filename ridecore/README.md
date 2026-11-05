@@ -97,6 +97,17 @@ Overrides in use:
   1.3 levels (`ZOOM_OUT`), since RIDECORE's map is under half the screen TrailCompass
   zooms for. Everything else in the file is TrailCompass's, re-exported.
   Test: `src/ridecore/nav-zoom.test.ts`.
+- `theme/map-theme.ts`: TrailCompass's, resolving RIDECORE's map colours (below) under
+  the build's env instead of TrailCompass's defaults.
+
+## Map colours
+
+TrailCompass's map theme (`src/theme/`, `.env.example`, DEVELOPMENT.md → "Theming the
+map") colours the basemap, routes and markers. RIDECORE's colours are
+`RIDECORE_MAP_THEME` in `src/ridecore/map-theme.ts`: TrailCompass's `dark` preset
+underneath, RIDECORE's neutral black, green route and lime rider over it. A build's env
+(`VITE_MAP_THEME`, `VITE_MAP_THEME_JSON`, `VITE_MAP_COLOR_*` in `.env.local` or the
+shell) still wins over them. Test: `src/ridecore/map-theme.test.ts`.
 
 ## Pulling in TrailCompass
 
@@ -109,8 +120,9 @@ git diff --name-only ORIG_HEAD HEAD -- src | while read -r f; do
   [ -e "src/ridecore/overrides/${f#src/}" ] && echo "$f"
 done
 
-# What TrailCompass's app does at start-up, in case useRideCore.ts should do it too.
-git diff ORIG_HEAD HEAD -- src/app/App.tsx
+# What TrailCompass's app does at start-up, in case RIDECORE should do it too:
+# src/main.tsx → src/ridecore/main.tsx, src/app/App.tsx → src/ridecore/app/useRideCore.ts.
+git diff ORIG_HEAD HEAD -- src/main.tsx src/app/App.tsx
 
 npm test && npm run build
 git push
