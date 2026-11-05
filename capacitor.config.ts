@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.praneth2580.trailcompass',
-  appName: 'TrailCompass',
+  appId: 'com.praneth2580.ridecore',
+  appName: 'RIDECORE',
   webDir: 'dist',
   server: {
     androidScheme: 'https',
@@ -10,7 +10,7 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
     // OpenFreeMap asks apps that save maps offline to name themselves.
-    appendUserAgent: 'TrailCompass',
+    appendUserAgent: 'RIDECORE',
   },
   plugins: {
     Geolocation: {

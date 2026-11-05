@@ -7,6 +7,7 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(com.praneth2580.ridecore.RideCoreDevicePlugin.class); // RIDECORE (ridecore/README.md)
         // Plugins in this app (not from npm) are registered before the bridge starts.
         registerPlugin(AppUpdaterPlugin.class);
         registerPlugin(DownloadsPlugin.class);

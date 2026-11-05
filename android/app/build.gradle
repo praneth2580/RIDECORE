@@ -4,7 +4,7 @@ android {
     namespace "com.praneth2580.trailcompass"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.praneth2580.trailcompass"
+        applicationId "com.praneth2580.ridecore" // RIDECORE's own; namespace stays TrailCompass's (ridecore/README.md)
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 17

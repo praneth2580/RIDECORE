@@ -1,10 +1,12 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { configDefaults } from 'vitest/config';
+import { ridecore } from './ridecore/vite-plugin.ts';
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  // ridecore(): starts RIDECORE's app on TrailCompass's engine (ridecore/README.md).
+  plugins: [react(), ridecore()],
   // Relative base so assets resolve correctly inside the Capacitor Android WebView.
   base: './',
   server: {

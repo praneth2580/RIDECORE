@@ -9,6 +9,9 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
 
+    /* RIDECORE: src/ridecore/overrides/<path> stands in for src/<path> (ridecore/README.md) */
+    "rootDirs": ["./src", "./src/ridecore/overrides"],
+
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
