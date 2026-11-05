@@ -27,7 +27,8 @@ import {
 } from '../offline/tile-protocol';
 import { mapPackService } from './map-pack.service';
 import { bundledPoisInBounds } from './bundled-pois.service';
-import { TRAFFIC_COLORS, type TrafficLevel } from './ride-insights';
+import type { TrafficLevel } from './ride-insights';
+import { mapTheme } from '../theme/map-theme';
 
 // Vite does not place MapLibre's worker next to the optimized dependency.
 // Point at the packaged worker before any map is created.
@@ -70,9 +71,8 @@ const POI_REFRESH_MIN_MS = 1_000;
 /** The least height worth fitting something into between the panels. */
 const MIN_FIT_ROOM = 160;
 
-const ROUTE_COLOR = '#F5A623';
-/** The part of the route already ridden. */
-const ROUTE_PASSED_COLOR = '#8b939c';
+/** Every colour the map draws with, from this build's theme (theme/map-theme-core.ts). */
+const COLORS = mapTheme;
 
 type Padding = { top: number; bottom: number; left: number; right: number };
 
@@ -120,13 +120,13 @@ const ALT_SOURCE = 'trailcompass-route-alts';
 const ALT_LAYER = 'trailcompass-route-alts-line';
 const ALT_HIT_LAYER = 'trailcompass-route-alts-hit';
 
-const ALT_COLORS = ['#5b8def', '#9b7bff', '#3dbea5'];
+const ALT_COLORS = COLORS.route.alternatives;
 
 /** A ride being recorded, and a past ride opened from the ride log. */
 export type RideLineKind = 'live' | 'view';
 const RIDE_LINES: Record<RideLineKind, { source: string; layer: string; color: string }> = {
-  live: { source: 'trailcompass-ride-live', layer: 'trailcompass-ride-live-line', color: '#ff5a5f' },
-  view: { source: 'trailcompass-ride-view', layer: 'trailcompass-ride-view-line', color: '#b28dff' },
+  live: { source: 'trailcompass-ride-live', layer: 'trailcompass-ride-live-line', color: COLORS.ride.recording },
+  view: { source: 'trailcompass-ride-view', layer: 'trailcompass-ride-view-line', color: COLORS.ride.past },
 };
 
 /** A route of the ride log by its usual traffic, from Library → Rides → Routes. */
@@ -145,7 +145,6 @@ const POI_LAYERS = {
 /** Fuel shows from further out than food; places to eat are far denser. */
 const POI_MIN_ZOOM = { fuel: 10, food: 13 };
 const POI_LABEL_ZOOM = 15;
-const POI_COLORS = { fuel: '#3dbea5', food: '#e07a5f' };
 const OVERLAY_PREF_KEY = 'tc.mapOverlays';
 /** Before overlays could be picked one by one: '0' hid the fuel & food layer. */
 const OLD_POI_PREF_KEY = 'tc.mapPois';
@@ -181,7 +180,7 @@ export interface MapPoi {
 const POSITION_ARROW_HTML = `
 <span class="tc-position-arrow-spin">
   <svg class="tc-position-arrow" viewBox="0 0 48 48" width="36" height="36" aria-hidden="true">
-    <path d="M24 4 L40 40 L24 32 L8 40 Z" fill="#3b8ef0" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M24 4 L40 40 L24 32 L8 40 Z" fill="${COLORS.markers.rider}" stroke="${COLORS.markers.riderOutline}" stroke-width="3" stroke-linejoin="round"/>
   </svg>
 </span>
 `;
@@ -761,6 +760,7 @@ export class MapLibreAdapter implements MapAdapter {
       const el = document.createElement('div');
       el.className = 'tc-position-marker';
       el.setAttribute('aria-label', 'Current GPS position');
+      // The dot is drawn in CSS (--tc-map-rider, set in main.tsx); the arrow in POSITION_ARROW_HTML.
       this.positionEl = el;
       this.positionMarker = new Marker({ element: el })
         .setLngLat(lngLat)
@@ -870,11 +870,11 @@ export class MapLibreAdapter implements MapAdapter {
     if (active) {
       this.map.setPaintProperty(ROUTE_LAYER, 'line-opacity', 0.35);
       this.map.setPaintProperty(ROUTE_LAYER, 'line-dasharray', [1.2, 1.6]);
-      this.map.setPaintProperty(ROUTE_LAYER, 'line-color', '#c47d10');
+      this.map.setPaintProperty(ROUTE_LAYER, 'line-color', COLORS.route.recalculating);
     } else {
       this.map.setPaintProperty(ROUTE_LAYER, 'line-opacity', 0.92);
       this.map.setPaintProperty(ROUTE_LAYER, 'line-dasharray', undefined);
-      this.map.setPaintProperty(ROUTE_LAYER, 'line-color', ROUTE_COLOR);
+      this.map.setPaintProperty(ROUTE_LAYER, 'line-color', COLORS.route.active);
     }
     this.applyRouteProgress();
   }
@@ -909,9 +909,9 @@ export class MapLibreAdapter implements MapAdapter {
         ? [
             'step',
             ['line-progress'],
-            ROUTE_PASSED_COLOR,
+            COLORS.route.passed,
             Math.min(progress, 0.99999),
-            ROUTE_COLOR,
+            COLORS.route.active,
           ]
         : undefined,
     );
@@ -1060,8 +1060,7 @@ export class MapLibreAdapter implements MapAdapter {
           type: 'line',
           source: TRAFFIC_SOURCE,
           layout: { 'line-cap': 'round', 'line-join': 'round' },
-          // Dark, so yellow and orange stand out on the pale map.
-          paint: { 'line-color': '#1d1d1d', 'line-opacity': 0.7, 'line-width': width(10) },
+          paint: { 'line-color': COLORS.traffic.casing, 'line-opacity': 0.7, 'line-width': width(10) },
         } as unknown as Parameters<MapLibreMap['addLayer']>[0],
         below,
       );
@@ -1076,14 +1075,14 @@ export class MapLibreAdapter implements MapAdapter {
               'match',
               ['get', 'level'],
               'clear',
-              TRAFFIC_COLORS.clear,
+              COLORS.traffic.clear,
               'moderate',
-              TRAFFIC_COLORS.moderate,
+              COLORS.traffic.moderate,
               'slow',
-              TRAFFIC_COLORS.slow,
+              COLORS.traffic.slow,
               'jammed',
-              TRAFFIC_COLORS.jammed,
-              TRAFFIC_COLORS.none,
+              COLORS.traffic.jammed,
+              COLORS.traffic.none,
             ],
             'line-width': width(6),
           },
@@ -1211,7 +1210,7 @@ export class MapLibreAdapter implements MapAdapter {
         type: 'line',
         source: GHOST_SOURCE,
         paint: {
-          'line-color': '#8fa698',
+          'line-color': COLORS.route.previous,
           'line-width': 4,
           'line-opacity': 0.55,
           'line-dasharray': [2, 2],
@@ -1229,7 +1228,7 @@ export class MapLibreAdapter implements MapAdapter {
         type: 'line',
         source: RECALC_SOURCE,
         paint: {
-          'line-color': '#ff6b4a',
+          'line-color': COLORS.route.recalcLink,
           'line-width': 3,
           'line-opacity': 0.75,
           'line-dasharray': [1, 1.4],
@@ -1277,7 +1276,7 @@ export class MapLibreAdapter implements MapAdapter {
         type: 'line',
         source: ROUTE_SOURCE,
         paint: {
-          'line-color': ROUTE_COLOR,
+          'line-color': COLORS.route.active,
           'line-width': 5,
           'line-opacity': 0.92,
         },
@@ -1323,8 +1322,8 @@ export class MapLibreAdapter implements MapAdapter {
       'text-optional': true,
     });
     const paint = {
-      'text-color': '#3b3b3b',
-      'text-halo-color': '#ffffff',
+      'text-color': COLORS.places.label,
+      'text-halo-color': COLORS.places.labelHalo,
       'text-halo-width': 1.2,
     };
     const osmName = ['coalesce', ['get', 'name:latin'], ['get', 'name'], ''];
@@ -1522,13 +1521,13 @@ function createDestinationPinElement(): HTMLDivElement {
   el.innerHTML = `
     <svg class="tc-destination-pin" viewBox="0 0 40 52" width="36" height="47" aria-hidden="true">
       <path
-        fill="#f0a020"
-        stroke="#1a1205"
+        fill="${COLORS.markers.destination}"
+        stroke="${COLORS.markers.outline}"
         stroke-width="2"
         d="M20 2C11.2 2 4 9.2 4 18c0 12.5 16 30 16 30s16-17.5 16-30C36 9.2 28.8 2 20 2z"
       />
-      <circle cx="20" cy="18" r="6.5" fill="#1a1205" />
-      <circle cx="20" cy="18" r="3.2" fill="#f5f0e6" />
+      <circle cx="20" cy="18" r="6.5" fill="${COLORS.markers.outline}" />
+      <circle cx="20" cy="18" r="3.2" fill="${COLORS.markers.glyph}" />
     </svg>
   `;
   return el;
@@ -1542,18 +1541,18 @@ function createStopPinElement(
   el.className = `tc-stop-marker tc-stop-marker-${kind}`;
   el.setAttribute('aria-label', name ?? kind);
   const fill =
-    kind === 'fuel' ? '#3dbea5' : kind === 'food' ? '#e07a5f' : '#7b8cff';
+    kind === 'fuel' ? COLORS.places.fuel : kind === 'food' ? COLORS.places.food : COLORS.markers.stop;
   const glyph = kind === 'fuel' ? 'F' : kind === 'food' ? 'E' : '+';
   el.innerHTML = `
     <svg class="tc-stop-pin" viewBox="0 0 40 52" width="30" height="39" aria-hidden="true">
       <path
         fill="${fill}"
-        stroke="#1a1205"
+        stroke="${COLORS.markers.outline}"
         stroke-width="2"
         d="M20 2C11.2 2 4 9.2 4 18c0 12.5 16 30 16 30s16-17.5 16-30C36 9.2 28.8 2 20 2z"
       />
-      <circle cx="20" cy="18" r="8" fill="#1a1205" />
-      <text x="20" y="22.5" text-anchor="middle" font-size="12" font-family="sans-serif" font-weight="700" fill="#f5f0e6">${glyph}</text>
+      <circle cx="20" cy="18" r="8" fill="${COLORS.markers.outline}" />
+      <text x="20" y="22.5" text-anchor="middle" font-size="12" font-family="sans-serif" font-weight="700" fill="${COLORS.markers.glyph}">${glyph}</text>
     </svg>
   `;
   return el;
@@ -1596,16 +1595,16 @@ function drawPoiIcon(kind: 'fuel' | 'food'): ImageData {
   const ctx = canvas.getContext('2d')!;
   ctx.beginPath();
   ctx.arc(size / 2, size / 2, size / 2 - 3, 0, Math.PI * 2);
-  ctx.fillStyle = POI_COLORS[kind];
+  ctx.fillStyle = COLORS.places[kind];
   ctx.fill();
   ctx.lineWidth = 3;
-  ctx.strokeStyle = '#1a1205';
+  ctx.strokeStyle = COLORS.markers.outline;
   ctx.stroke();
   ctx.save();
   const scale = 1.25;
   ctx.translate(size / 2 - 12 * scale, size / 2 - 12 * scale);
   ctx.scale(scale, scale);
-  ctx.strokeStyle = '#ffffff';
+  ctx.strokeStyle = COLORS.places.icon;
   ctx.lineWidth = 2;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';

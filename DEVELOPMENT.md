@@ -8,6 +8,7 @@ How to build, run, test and release TrailCompass. For a file-by-file tour of the
 - [npm scripts](#npm-scripts)
 - [Project layout](#project-layout)
 - [How it works](#how-it-works)
+- [Theming the map](#theming-the-map)
 - [Android builds](#android-builds)
 - [Releasing a new version](#releasing-a-new-version)
 - [The website on GitHub Pages](#the-website-on-github-pages)
@@ -91,6 +92,7 @@ src/
   database/                   Small JSON stores on Capacitor Preferences
   offline/                    Offline maps: PMTiles writer, tile store, tile planning, the map's tcmap:// protocol, file storage
   hooks/                      Back button, keep-awake, ride view
+  theme/                      The map's colours: default theme, presets, env overrides
   types/                      Shared types
 ```
 
@@ -123,6 +125,84 @@ Downloads stay within OpenFreeMap's offline limits: at most 3,000 tiles, 50 MB a
 **Wi-Fi only downloads.** The Offline tab's Downloads setting (`download-policy.service.ts`) can keep large downloads off mobile data. Road downloads for planning and offline maps then wait for Wi-Fi (the progress line says so), and fuel and food data and app updates hold off. Rerouting during a ride, the map on screen and searches always use whatever network is up. `DownloadsPlugin` reports the network type from Android's `ConnectivityManager`.
 
 **Updates without a new build.** The fuel and food data refreshes itself. About once a day, `poi-data.service.ts` checks the website's `poi/manifest.json` and downloads a newer release. The app updates itself too: `app-update.service.ts` checks the website's `download/latest.json`, falling back to the GitHub API. It downloads the APK with progress and opens Android's installer through `AppUpdaterPlugin`.
+
+## Theming the map
+
+Every colour the map draws with comes from one theme in `src/theme/map-theme-core.ts`. That covers the route and route options, recorded rides, traffic, fuel and food places, pins and the rider marker. A theme can also recolour the basemap. The default theme is the app as it has always looked: OpenFreeMap Liberty with the amber route.
+
+A build picks its theme from env variables. Put them in `.env.local` (git-ignored; start from `.env.example`) or set them in the shell. Each row overrides the rows above it:
+
+| Variable | Sets | Example |
+|---|---|---|
+| `VITE_MAP_THEME` | A preset: `default` or `dark` | `VITE_MAP_THEME=dark` |
+| `VITE_MAP_THEME_JSON` | Any part of a theme, as JSON | `VITE_MAP_THEME_JSON='{"route":{"active":"#e63946"}}'` |
+| `VITE_MAP_COLOR_<GROUP>_<NAME>` | One colour | `VITE_MAP_COLOR_ROUTE_ACTIVE="#e63946"` |
+
+```bash
+VITE_MAP_THEME=dark npm run dev
+VITE_MAP_THEME=dark npm run cap:run     # an APK with the dark map
+```
+
+- **Colours** are anything MapLibre reads: hex (`#e63946`, `#e6394680`), `rgb()`, `rgba()`, `hsl()`, `hsla()` or a CSS colour name.
+- **Quote colours in `.env` files.** An unquoted `#` starts a comment, so `VITE_MAP_COLOR_ROUTE_ACTIVE=#e63946` is read as empty. Put JSON in single quotes for the same reason.
+- **The theme is fixed when the app is built**, because Vite inlines `import.meta.env`. Rebuild the APK after changing it. The dev server restarts by itself when a `.env` file changes.
+- **Mistakes are reported, not guessed at.** A value that isn't a colour, a name that isn't in the theme, or a preset that doesn't exist fails `npm run build`, so an APK never ships with a colour quietly skipped. The dev server and the browser console only warn, and the colour underneath stays.
+
+### Colours
+
+Each colour's variable is `VITE_MAP_COLOR_`, then the group and name in capitals with words split by `_`. For example, `route.recalcLink` is `VITE_MAP_COLOR_ROUTE_RECALC_LINK`.
+
+| Colour | Default | Used for |
+|---|---|---|
+| `route.active` | `#F5A623` | The route on offer or being followed |
+| `route.passed` | `#8b939c` | The part of it already ridden |
+| `route.recalculating` | `#c47d10` | The route, dashed, while a new one is worked out |
+| `route.previous` | `#8fa698` | The route before a reroute, until the new one arrives |
+| `route.recalcLink` | `#ff6b4a` | The dashed line from the rider to the destination while rerouting |
+| `route.alternatives` | `#5b8def, #9b7bff, #3dbea5` | Route options in turn, and their button swatches. A JSON array, or comma-separated in the variable |
+| `ride.recording` | `#ff5a5f` | The ride being recorded |
+| `ride.past` | `#b28dff` | A past ride opened from the ride log |
+| `traffic.clear`, `.moderate`, `.slow`, `.jammed` | `#0ca30c`, `#fab219`, `#ec835a`, `#d03b3b` | A route by its usual traffic, on the map and in its legends |
+| `traffic.none` | `#8b939c` | Stretches without enough rides to tell |
+| `traffic.casing` | `#1d1d1d` | The outline under the traffic line |
+| `places.fuel`, `places.food` | `#3dbea5`, `#e07a5f` | Fuel and food icons, and fuel and food stop pins |
+| `places.icon` | `#ffffff` | The pump or cutlery on an icon |
+| `places.label`, `places.labelHalo` | `#3b3b3b`, `#ffffff` | Place names |
+| `markers.rider`, `markers.riderOutline` | `#3b8ef0`, `#ffffff` | The GPS dot and the navigation arrow |
+| `markers.destination` | `#f0a020` | The destination pin |
+| `markers.stop` | `#7b8cff` | A stop dropped on the map |
+| `markers.outline` | `#1a1205` | The edge of pins and icons, and the disc in a pin |
+| `markers.glyph` | `#f5f0e6` | The dot or letter in a pin's disc |
+
+**Basemap colours** are unset by default, so Liberty shows as it comes. Each one covers a family of Liberty's layers (`BASEMAP_TARGETS`) and only replaces colours those layers already have. One colour replaces Liberty's zoom-dependent shading for that family. For anything finer, such as one layer, line widths or opacity, edit `src/offline/liberty-style.json`.
+
+| Colour | Liberty layers |
+|---|---|
+| `basemap.background` | Land |
+| `basemap.landuse` | Residential areas, sports grounds, cemeteries, hospitals, schools, sand, ice, airports |
+| `basemap.park` | Parks, woods, grass |
+| `basemap.water` | Sea, lakes, rivers |
+| `basemap.building` | Buildings, flat and 3D |
+| `basemap.motorway` | Motorways and their links |
+| `basemap.majorRoad` | Trunk, primary, secondary and tertiary roads, and links |
+| `basemap.minorRoad` | Streets, service roads, tracks, runways |
+| `basemap.roadCasing` | Road edges |
+| `basemap.path` | Footpaths |
+| `basemap.rail` | Railways |
+| `basemap.boundary` | Borders |
+| `basemap.label` | Names of places, POIs, roads and airports |
+| `basemap.waterLabel` | Names of seas and rivers |
+| `basemap.labelHalo` | The halo around names |
+
+### Adding a preset
+
+Add an entry to `MAP_THEME_PRESETS` in `src/theme/map-theme-core.ts`. A preset is laid over the default theme, so it only lists what it changes. `npm test` checks that every preset resolves cleanly.
+
+### Colours in code
+
+Read colours from `mapTheme` (`src/theme/map-theme.ts`), never a literal. `map.service.ts` draws with it, `buildMapStyle()` applies `basemap` to Liberty, and the UI uses it wherever it repeats a map colour (route option swatches, the traffic legend). For CSS, `src/main.tsx` sets the colours the stylesheet needs as `--tc-map-*` variables on `:root`: the rider dot (`.tc-position-marker`) and the Plan tab's stop icons (`.tc-plan-icon`) read them.
+
+The app's own interface colours are separate: they are the design tokens in `:root` of `src/index.css`.
 
 ## Android builds
 

@@ -2,6 +2,8 @@ import { addProtocol, type StyleSpecification } from 'maplibre-gl';
 import { zxyToTileId } from 'pmtiles';
 import libertyStyle from './liberty-style.json';
 import { anySignal } from '../routing/abort';
+import { mapTheme } from '../theme/map-theme';
+import { applyBasemapTheme } from '../theme/map-theme-core';
 import { packFiles } from './pack-files';
 import { tileStore } from './tile-store';
 
@@ -68,7 +70,7 @@ export function registerTileProtocol(): void {
   });
 }
 
-/** OpenFreeMap's Liberty style, reading everything through `tcmap://`. */
+/** OpenFreeMap's Liberty style, reading everything through `tcmap://`, in the build's map theme. */
 export function buildMapStyle(): StyleSpecification {
   const style = structuredClone(libertyStyle) as unknown as StyleSpecification;
   style.sources = {
@@ -96,6 +98,7 @@ export function buildMapStyle(): StyleSpecification {
       layer.filter = ['all', layer.filter, ours] as typeof layer.filter;
     }
   }
+  applyBasemapTheme(style, mapTheme.basemap);
   return style;
 }
 
