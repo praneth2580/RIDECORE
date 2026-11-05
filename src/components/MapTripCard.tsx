@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
 import { formatArrivalTime, formatDistanceShort, formatEtaShort } from '../routing/route-naming';
 import type { NavigationState } from '../types/navigation';
+import { mapTheme } from '../theme/map-theme';
 import { BackgroundIcon, RouteProgress, SaveIcon, ShareIcon } from './NavigationBanner';
 import { PinIcon } from './RideGroupLists';
 
 /** The colours the route options are drawn in on the map. */
-const ROUTE_SWATCHES = ['#5b8def', '#9b7bff', '#3dbea5'];
+const ROUTE_SWATCHES = mapTheme.route.alternatives;
 
 interface MapTripCardProps {
   state: NavigationState;

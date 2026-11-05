@@ -1,10 +1,31 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import { configDefaults } from 'vitest/config';
+import { resolveMapTheme } from './src/theme/map-theme-core.ts';
+
+/**
+ * Checks the map theme env (src/theme/map-theme-core.ts) where it was set.
+ * A bad value stops the build, so an APK never ships with a colour skipped;
+ * the dev server only warns.
+ */
+function checkMapTheme(): Plugin {
+  return {
+    name: 'trailcompass:map-theme',
+    configResolved(config) {
+      const { problems } = resolveMapTheme(config.env);
+      if (problems.length === 0) return;
+      const list = problems.map((problem) => `  - ${problem}`).join('\n');
+      if (config.command === 'build') {
+        throw new Error(`Map theme: fix these in .env.local or the shell:\n${list}`);
+      }
+      config.logger.warn(`Map theme: these were ignored:\n${list}`);
+    },
+  };
+}
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), checkMapTheme()],
   // Relative base so assets resolve correctly inside the Capacitor Android WebView.
   base: './',
   server: {

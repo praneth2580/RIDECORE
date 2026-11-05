@@ -1,6 +1,7 @@
 import type { Coordinate } from '../routing/routing-adapter';
 import { PathIndex, tripSegments } from './ride-groups';
 import { ridePeriod, type RidePeriod, type TrackFix } from './ride-track';
+import { mapTheme } from '../theme/map-theme';
 
 /**
  * What several rides of one route say about it: how long it usually
@@ -38,14 +39,14 @@ export const TRAFFIC_LEVELS: Array<{ level: TrafficLevel; minKmh: number }> = [
 
 /**
  * Status colours (good → critical), for the map and its key; grey where
- * no ride was tracked. On the light map they sit on a dark casing.
+ * no ride was tracked. From the map theme, so the key matches the map.
  */
 export const TRAFFIC_COLORS: Record<TrafficLevel | 'none', string> = {
-  clear: '#0ca30c',
-  moderate: '#fab219',
-  slow: '#ec835a',
-  jammed: '#d03b3b',
-  none: '#8b939c',
+  clear: mapTheme.traffic.clear,
+  moderate: mapTheme.traffic.moderate,
+  slow: mapTheme.traffic.slow,
+  jammed: mapTheme.traffic.jammed,
+  none: mapTheme.traffic.none,
 };
 
 export function trafficLevel(kmh: number): TrafficLevel {

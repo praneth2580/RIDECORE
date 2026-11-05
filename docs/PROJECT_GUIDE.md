@@ -85,10 +85,11 @@ TrailCompass is an Android navigation app for motorcycle touring. It is a React 
 ```text
 trailcompass/
 ├── index.html                  Web entry; loads Google Fonts, mounts #root
-├── vite.config.ts              base './', outDir dist, sourcemaps
+├── vite.config.ts              base './', outDir dist, sourcemaps; fails the build on a bad map theme
 ├── capacitor.config.ts         appId com.praneth2580.trailcompass, webDir dist, https scheme
 ├── tsconfig*.json              Strict-ish TS (noUnused*, verbatimModuleSyntax, erasableSyntaxOnly)
 ├── .oxlintrc.json              Lint config
+├── .env.example                Map theme variables to copy into .env.local
 ├── package.json                Scripts for dev / build / Android / release / icons
 │
 ├── src/
@@ -103,6 +104,7 @@ trailcompass/
 │   ├── database/               JSON key-value repositories on Capacitor Preferences
 │   ├── offline/                Offline maps: tile store, PMTiles, tile planning, tcmap://
 │   ├── hooks/                  useRideFullscreen, useKeepAwake, useBackHandler
+│   ├── theme/                  Map colours: default theme, presets, env overrides
 │   └── types/                  Shared domain types
 │
 ├── public/
@@ -271,7 +273,7 @@ The Map tab's one card, in the dock, until the ride starts. It keeps the map fre
 - **Planning:** the progress label, the bar when bytes are known, **Run in background** on Android, and **Stop**.
 - **Choosing:** time, distance and arrival, one button per route when there are several, **Start**, and icons for stops, save and share. Tapping the map doesn't change the trip while a route is on offer or stops are planned (`handleMapClick` says why in a toast).
 - **Arrived:** **Done** clears the trip.
-- Route button swatches (`#5b8def`, `#9b7bff`, `#3dbea5`) must match `ALT_COLORS` in `map.service.ts`.
+- Route button swatches are `mapTheme.route.alternatives`, the colours `map.service.ts` draws the options in (§14).
 
 #### `NavigationBanner.tsx`
 The status and action strip while navigating, paused or in ride view. `RouteProgress` and its icons are shared with `MapTripCard`.
@@ -400,7 +402,7 @@ Top to bottom:
 
 ### 7.3 `map.service.ts` — MapLibre adapter (`MapLibreAdapter`)
 
-Wraps every map operation so the UI never touches MapLibre directly.
+Wraps every map operation so the UI never touches MapLibre directly. Every colour it draws with comes from the build's map theme (`COLORS`, §14); the colours below are the default theme's.
 
 - **Setup:** calls `setWorkerUrl` with the worker URL from Vite's `?url` import, so the bundled worker loads. Style: `buildMapStyle()`, the bundled copy of OpenFreeMap's Liberty style read through the `tcmap://` protocol (§11). Starts with a world view (zoom 1.5). The first GPS fix zooms to 15.
 - **Status:** `subscribeStatus` reports `{ok, message}`. It is ok after `load`, and an error if the style fails before loading.
@@ -903,6 +905,7 @@ Turns on an immersive map view automatically once the bike is clearly moving dur
 ## 14. Styling
 
 - One stylesheet: `src/index.css` (about 2,400 lines). Class names use a `tc-` prefix.
+- **Map colours** are not in the stylesheet. They come from the map theme (`src/theme/`): `map-theme-core.ts` has the `MapTheme` type, the default theme, the presets (`default`, `dark`), the env resolution and `applyBasemapTheme`; `map-theme.ts` resolves this build's theme from `import.meta.env` as `mapTheme`. A build sets it with `VITE_MAP_THEME`, `VITE_MAP_THEME_JSON` and `VITE_MAP_COLOR_*` (DEVELOPMENT.md → Theming the map). `vite.config.ts` fails the build on a bad value. `main.tsx` sets the map colours the stylesheet repeats as `--tc-map-*` variables on `:root`, for the rider dot (`.tc-position-marker`) and the Plan tab's stop icons (`.tc-plan-icon`).
 - **Design tokens** in `:root`: a dark green-black background (`#06100c`), amber accent (`#f0a020`), danger (`#ff6b4a`), ok (`#4fcf84`), 48 px touch targets, 16 px radius, and safe-area insets. The app is **dark only** (`color-scheme: dark`).
 - **Fonts** (Google Fonts, loaded in `index.html`): *Chakra Petch* for display text, *DM Sans* for body text, *IBM Plex Mono* for numbers. They fall back to system fonts when offline.
 - **Modes through data attributes** on `.tc-app`. `[data-nav='true']` and `[data-ride='true']` hide the bottom tab bar, shrink the HUD and dock, and show the Recenter button.

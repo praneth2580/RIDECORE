@@ -12,6 +12,12 @@ reads tiles from the phone's tile store (PMTiles, filled by saved trips and
 areas) when it has them, and from OpenFreeMap otherwise. To pick up a newer Liberty style, replace the
 copy with the file at the URL above.
 
+To recolour the basemap, set the map theme's `basemap` colours instead of
+editing the copy (DEVELOPMENT.md → "Theming the map", e.g.
+`VITE_MAP_THEME=dark`). `buildMapStyle()` lays them over the copy, so they
+carry over to a newer Liberty. `src/theme/map-theme-core.test.ts` fails if a
+newer Liberty renames the layers a colour is meant for.
+
 Offline maps follow OpenFreeMap's terms for offline use: at most 3,000
 tiles or 50 MB per download, 4 requests at a time, with an identifying
 User-Agent (`appendUserAgent` in `capacitor.config.ts`). Do not
