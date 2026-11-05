@@ -1,7 +1,7 @@
 import { registerPlugin, type PluginListenerHandle } from '@capacitor/core';
 
 /**
- * Native side: android/app/src/main/java/com/example/trailcompass/DownloadsPlugin.java
+ * Native side: android/app/src/main/java/com/praneth2580/trailcompass/DownloadsPlugin.java
  * A foreground service with a progress notification keeps route planning
  * running while the app is in the background, and the plugin reports
  * which kind of network the phone is on.

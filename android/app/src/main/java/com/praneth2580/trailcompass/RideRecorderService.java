@@ -1,4 +1,4 @@
-package com.example.trailcompass;
+package com.praneth2580.trailcompass;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -38,10 +38,10 @@ import java.util.Locale;
  */
 public class RideRecorderService extends Service implements LocationHub.Listener {
 
-    static final String ACTION_START = "com.example.trailcompass.ride.START";
-    static final String ACTION_PAUSE = "com.example.trailcompass.ride.PAUSE";
-    static final String ACTION_RESUME = "com.example.trailcompass.ride.RESUME";
-    static final String ACTION_FINISH = "com.example.trailcompass.ride.FINISH";
+    static final String ACTION_START = "com.praneth2580.trailcompass.ride.START";
+    static final String ACTION_PAUSE = "com.praneth2580.trailcompass.ride.PAUSE";
+    static final String ACTION_RESUME = "com.praneth2580.trailcompass.ride.RESUME";
+    static final String ACTION_FINISH = "com.praneth2580.trailcompass.ride.FINISH";
 
     static final String RECORDING = "recording";
     static final String PAUSED = "paused";

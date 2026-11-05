@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.example.trailcompass"
+    namespace "com.praneth2580.trailcompass"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.example.trailcompass"
+        applicationId "com.praneth2580.trailcompass"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 16

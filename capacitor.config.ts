@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.example.trailcompass',
+  appId: 'com.praneth2580.trailcompass',
   appName: 'TrailCompass',
   webDir: 'dist',
   server: {

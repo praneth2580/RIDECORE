@@ -1,4 +1,4 @@
-package com.example.trailcompass;
+package com.praneth2580.trailcompass;
 
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;

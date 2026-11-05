@@ -13,7 +13,7 @@ import { downloadPolicy } from './download-policy.service';
  * are slow or stall on many mobile networks, and the site is on a CDN.
  */
 
-/** Native side: android/app/src/main/java/com/example/trailcompass/AppUpdaterPlugin.java */
+/** Native side: android/app/src/main/java/com/praneth2580/trailcompass/AppUpdaterPlugin.java */
 interface AppUpdaterPlugin {
   download(options: { url: string; fileName: string }): Promise<{ path: string }>;
   install(options: { path: string }): Promise<{ status: 'started' | 'needs-permission' }>;

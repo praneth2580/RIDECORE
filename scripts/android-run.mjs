@@ -13,7 +13,7 @@ const sdk = androidSdk();
 const adb = sdkBin('adb');
 const emulatorBin = sdkBin('emulator');
 const apk = path.join(root, 'android', 'app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk');
-const appId = 'com.example.trailcompass';
+const appId = 'com.praneth2580.trailcompass';
 const defaultAvd = process.env.ANDROID_AVD || 'Pixel_3a_API_34_extension_level_7_x86_64';
 
 const mode = process.argv[2] || 'install'; // start | wait | install | run

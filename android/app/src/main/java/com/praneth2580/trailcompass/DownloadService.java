@@ -1,4 +1,4 @@
-package com.example.trailcompass;
+package com.praneth2580.trailcompass;
 
 import android.app.Service;
 import android.content.Context;
@@ -17,10 +17,10 @@ import androidx.core.content.ContextCompat;
  */
 public class DownloadService extends Service {
 
-    static final String ACTION_START = "com.example.trailcompass.download.START";
-    static final String ACTION_PAUSE = "com.example.trailcompass.download.PAUSE";
-    static final String ACTION_RESUME = "com.example.trailcompass.download.RESUME";
-    static final String ACTION_STOP = "com.example.trailcompass.download.STOP";
+    static final String ACTION_START = "com.praneth2580.trailcompass.download.START";
+    static final String ACTION_PAUSE = "com.praneth2580.trailcompass.download.PAUSE";
+    static final String ACTION_RESUME = "com.praneth2580.trailcompass.download.RESUME";
+    static final String ACTION_STOP = "com.praneth2580.trailcompass.download.STOP";
 
     /** Asked to start; the service has not called startForeground() yet. */
     private static boolean starting;

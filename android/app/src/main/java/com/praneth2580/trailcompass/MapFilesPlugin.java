@@ -1,4 +1,4 @@
-package com.example.trailcompass;
+package com.praneth2580.trailcompass;
 
 import android.util.Base64;
 import com.getcapacitor.JSObject;

@@ -132,13 +132,13 @@ npm run cap:run          # build, sync, assemble, install and launch the debug A
 
 Or one step at a time: `npm run cap:sync`, `npm run cap:build`, `npm run cap:install`. To work in Android Studio, run `npx cap open android`. If no phone is connected, `cap:install` and `cap:run` start an emulator; set `ANDROID_AVD` to choose which one.
 
-- **Native code** in `android/app/src/main/java/com/example/trailcompass/`, registered in `MainActivity`:
+- **Native code** in `android/app/src/main/java/com/praneth2580/trailcompass/`, registered in `MainActivity`:
   - `AppUpdaterPlugin.java` downloads update APKs and opens the installer.
   - `DownloadsPlugin.java` starts and stops `DownloadService` (background planning), posts its notifications (`DownloadNotifications.java`), and reports Wi-Fi or mobile data.
   - `MapFilesPlugin.java` reads and writes byte ranges of offline map files (PMTiles) in the app's data and cache folders.
   - `RideLocationPlugin.java` gives the app its position from the chosen GPS mode (`LocationHub.java`) and controls ride recording (`RideRecorderService.java`).
 - **Permissions:** location and internet; `REQUEST_INSTALL_PACKAGES` for in-app updates; `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_DATA_SYNC` and `POST_NOTIFICATIONS` (asked the first time you run planning in the background) for background planning; `FOREGROUND_SERVICE_LOCATION` for recording rides with the screen off; `ACCESS_NETWORK_STATE` for the Wi-Fi only setting.
-- **App ID.** `com.example.trailcompass` is a placeholder. Changing it later makes Android treat the app as a different one, so installed copies won't update to it.
+- **App ID.** `com.praneth2580.trailcompass`. Changing it makes Android treat the app as a different one, so installed copies won't update to it.
 
 ## Releasing a new version
 
