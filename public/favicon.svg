@@ -1,17 +1,7 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="14.08" fill="#06100c"/>
-  <circle cx="32" cy="32" r="24.96" stroke="#1a2e24" stroke-width="2" fill="#0a1511"/>
-  <circle cx="32" cy="32" r="21.47" stroke="#f0a020" stroke-width="1" opacity="0.55"/>
-  <g stroke="#8aa194" stroke-width="1.5" stroke-linecap="round" opacity="0.85">
-    <path d="M32 7.44v2"/>
-    <path d="M32 54.56v2"/>
-    <path d="M7.44 32h2"/>
-    <path d="M54.56 32h2"/>
-  </g>
-  <path d="M32 33.4 L25.01 51.47 L32 47.97 L38.99 51.47 Z" fill="#3d5a4a"/>
-  <path d="M32 30.6 L25.01 12.53 L32 16.03 L38.99 12.53 Z" fill="#f0a020"/>
-  <path d="M32 30.6 L32 16.03 L38.99 12.53 Z" fill="#c47d10"/>
-  <circle cx="32" cy="32" r="3.49" fill="#eef3ec"/>
-  <circle cx="32" cy="32" r="1.75" fill="#06100c"/>
+  <rect width="64" height="64" rx="15" fill="#000"/>
+  <path d="M17.86 47.14A20 20 0 1 1 46.14 47.14" stroke="#2b2c30" stroke-width="6" stroke-linecap="round"/>
+  <path d="M17.86 47.14A20 20 0 1 1 49.32 23" stroke="#dffe45" stroke-width="6" stroke-linecap="round"/>
+  <path d="M32 33l8.7-5" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="32" cy="33" r="4" fill="#fff"/>
 </svg>

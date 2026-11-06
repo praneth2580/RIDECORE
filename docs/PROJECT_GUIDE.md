@@ -443,7 +443,6 @@ What the engine can do but RIDECORE doesn't offer yet, and other loose ends. Che
 - **Rides can only be looked at.** No GPX export, delete, save as trip, or ride insights (usual routes, places and traffic).
 - **Engine settings without a key.** The GPS mode (default: satellites with mobile data and Wi-Fi) and Wi-Fi only downloads (default: any network) keep the engine's defaults.
 - **No in-app updates.** TrailCompass's update check is left out because it would offer TrailCompass's APKs. New RIDECORE versions are installed by hand from its releases.
-- **TrailCompass's icon.** The app icon, splash screens and `public/` icons are still TrailCompass's.
 - **Fuel and food data from TrailCompass's site.** The data update URL in `poi-data.service.ts` points at TrailCompass's website, which is intended: it isn't renamed.
 - **What needs a connection.** Search (Nominatim), radio stations and streams (Radio Browser and the stations themselves), and the weather (Open-Meteo). Showing and controlling the phone's music apps doesn't (though a streaming app may).
 - **Radio is HTTPS only.** Stations without an HTTPS stream aren't listed: the web view blocks plain HTTP audio.

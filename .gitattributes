@@ -10,3 +10,13 @@
 /docs/PROJECT_GUIDE.md        merge=ours
 /site/**                      merge=ours
 /scripts/render-og-image.mjs  merge=ours
+
+# RIDECORE's mark in place of TrailCompass's compass (drawn by ridecore/icons.mjs).
+/public/favicon.svg                                        merge=ours
+/public/favicon-32.png                                     merge=ours
+/public/apple-touch-icon.png                               merge=ours
+/public/icon-192.png                                       merge=ours
+/public/icon-512.png                                       merge=ours
+/android/app/src/main/res/mipmap-*/*.png                   merge=ours
+/android/app/src/main/res/drawable*/splash.png             merge=ours
+/android/app/src/main/res/values/ic_launcher_background.xml merge=ours

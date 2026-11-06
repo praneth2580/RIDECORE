@@ -76,7 +76,7 @@ The scripts are TrailCompass's. Most work for RIDECORE as they are.
 | `npm run site:preview` | Build the website and serve it locally (port 4173) |
 | `npm run site:og` | Re-render the share image `site/og-image.png` |
 | `npm run data:poi` | Rebuild the bundled fuel and food data (TrailCompass's; see its DEVELOPMENT.md) |
-| `npm run icons:generate` | Regenerate the app icons from `resources/`. They are still TrailCompass's |
+| `npm run icons:generate` | **Not for RIDECORE.** It paints TrailCompass's compass over RIDECORE's icons. RIDECORE's are drawn by `node ridecore/icons.mjs` |
 | `npm run release:minor` / `release:major` | **Not for RIDECORE.** They bump TrailCompass's version and publish a "TrailCompass" release. See [Releasing](#releasing-a-new-version) |
 
 ## Project layout
@@ -163,7 +163,7 @@ Working on the site:
 
 - `npm run site:preview` builds it and serves it at <http://localhost:4173>. The download buttons fall back to GitHub there, since there's no `download/` folder locally.
 - The phone in the hero is an inline SVG (`<svg id="phone">` in `site/index.html`), drawn after the landscape dash. After changing it, run `npm run site:og` to redraw `site/og-image.png`, which the README shows too. It needs Playwright's Chromium (`npx playwright install chromium`), or `CHROME_PATH` pointing at an installed Chrome.
-- `site/mark.svg` is the site's icon, a lime dial. `mark-32.png` and `mark-180.png` are renders of it, made with sharp. The app icon is still TrailCompass's.
+- `site/mark.svg` is RIDECORE's mark, a lime dial: the site's icon and the app's. `node ridecore/icons.mjs` draws it, with sharp, into every icon from one source: the site's `mark-32.png` and `mark-180.png`, `public/`'s favicon and app icons, and Android's launcher icons and splash.
 - `site/qr.svg` encodes the site's address. To make it again: `npx --yes qrcode@1.5.4 -t svg -q 0 -e M -d 000000ff -l 00000000 -o site/qr.svg https://praneth2580.github.io/RIDECORE/`.
 - Check every change at 360 px wide as well as on a desktop.
 

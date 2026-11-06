@@ -315,17 +315,28 @@ Keep this list short and current. These are the only places a merge can conflict
   `android/app/src/main/res/values/strings.xml` (the name under the app icon), and
   `appName` and `appendUserAgent` in `capacitor.config.ts` (how the app names itself to
   OpenFreeMap).
+- `android/app/src/main/res/values/styles.xml`: one item on the launch theme,
+  `windowSplashScreenBackground` black, so Android 12 and later (which draw the splash
+  themselves, the launcher icon in the middle) don't show it on white in light mode.
 - `scripts/build-site.mjs`: `SITE_URL`, RIDECORE's site address for the sitemap.
 - `.github/workflows/pages.yml`, step "Add the newest app release": it looks up the
   newest `ridecore-v*` release, pre-releases included (GitHub's "latest release" skips
   them), accepts its tag, and drops `ridecore-v` for `version` in `latest.json`.
 - Replaced outright, and kept by `.gitattributes` so they don't conflict:
   `README.md`, `DEVELOPMENT.md`, `docs/PROJECT_GUIDE.md`, `site/`,
-  `scripts/render-og-image.mjs` ([Docs and the website](#docs-and-the-website)).
+  `scripts/render-og-image.mjs` ([Docs and the website](#docs-and-the-website)); and the
+  icons: Android's launcher icons (`res/mipmap-*/*.png`), its splash
+  (`res/drawable*/splash.png`), `res/values/ic_launcher_background.xml` (black), and
+  `public/`'s favicon and app icons. `node ridecore/icons.mjs` draws them all, and the
+  website's, from one source: the lime dial. Never TrailCompass's `npm run
+  icons:generate`, which paints its compass back over them.
 
 To check for others:
 
 ```bash
 git diff --stat upstream/main -- . ':!ridecore' ':!src/ridecore' ':!.gitattributes' \
-  ':!README.md' ':!DEVELOPMENT.md' ':!docs' ':!site' ':!scripts/render-og-image.mjs'
+  ':!README.md' ':!DEVELOPMENT.md' ':!docs' ':!site' ':!scripts/render-og-image.mjs' \
+  ':!android/app/src/main/res/mipmap-*' ':!android/app/src/main/res/drawable*/splash.png' \
+  ':!android/app/src/main/res/values/ic_launcher_background.xml' ':!public/favicon*' \
+  ':!public/apple-touch-icon.png' ':!public/icon-*.png'
 ```
