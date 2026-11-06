@@ -88,6 +88,8 @@ export class RideLogService {
   private lineCounter = new DistanceCounter();
   private lastRedraw = 0;
   private finishing: Promise<RideRecord | null> | null = null;
+  /** The ride being thrown away: the recorder saying it finished isn't a ride to keep. */
+  private discarding: string | null = null;
   private wasNavigating = false;
   private autoRecord = readAutoRecord();
   private loaded: Promise<void> | null = null;
@@ -217,9 +219,14 @@ export class RideLogService {
   async discard(): Promise<void> {
     const live = this.live;
     if (!live) return;
-    await this.recorder.finish();
-    await this.recorder.clear(live.id);
-    this.endLive(live.id);
+    this.discarding = live.id;
+    try {
+      await this.recorder.finish();
+      await this.recorder.clear(live.id);
+      this.endLive(live.id);
+    } finally {
+      this.discarding = null;
+    }
   }
 
   list(): Promise<RideRecord[]> {
@@ -335,7 +342,7 @@ export class RideLogService {
     if (!this.live || state.id !== this.live.id) return;
     if (state.state === 'finished') {
       // Finished from the notification.
-      if (!this.finishing) void this.finalize(state);
+      if (!this.finishing && this.discarding !== state.id) void this.finalize(state);
       return;
     }
     if (state.state !== this.live.state && state.state === 'recording') this.lineCounter.break();

@@ -1,7 +1,7 @@
 /**
  * The phone RIDECORE runs on, kept for it alone: the screen layout the rider picked,
- * RIDECORE as the home screen, the phone's other apps to open from it, and the music
- * they play. Native side:
+ * RIDECORE as the home screen, the phone's other apps to open from it, the music they
+ * play, and the whole screen, Android's own bars hidden. Native side:
  * android/app/src/main/java/com/praneth2580/ridecore/RideCoreDevicePlugin.java
  */
 import { registerPlugin, WebPlugin, type PluginListenerHandle } from '@capacitor/core';
@@ -77,6 +77,16 @@ export interface PhoneStatus {
 
 export const NO_PHONE_STATUS: PhoneStatus = { supported: false };
 
+/** How far in from each edge the page keeps its words: the camera's cut-out, in CSS pixels. */
+export interface ScreenSides {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+export const NO_CUTOUT: ScreenSides = { top: 0, right: 0, bottom: 0, left: 0 };
+
 interface RideCoreDevicePlugin {
   /** Undefined until the rider has picked one. */
   getLayout(): Promise<{ layout?: Layout }>;
@@ -95,6 +105,10 @@ interface RideCoreDevicePlugin {
   openMediaAccess(): Promise<void>;
   /** SIM and signal, Wi-Fi or offline, airplane mode, a headset. */
   getStatus(): Promise<PhoneStatus>;
+  /** The camera's cut-out, which RIDECORE draws under now that Android's bars are hidden. */
+  getCutout(): Promise<ScreenSides>;
+  /** The phone turned, so the cut-out is on another side. */
+  addListener(eventName: 'cutout', listener: (cutout: ScreenSides) => void): Promise<PluginListenerHandle>;
   /** Home pressed while RIDECORE is the home screen. */
   addListener(eventName: 'home', listener: () => void): Promise<PluginListenerHandle>;
   /** The connection or the headset changed. The signal level isn't pushed: read it again. */
@@ -142,6 +156,10 @@ class RideCoreDeviceWeb extends WebPlugin implements RideCoreDevicePlugin {
 
   async getStatus(): Promise<PhoneStatus> {
     return NO_PHONE_STATUS;
+  }
+
+  async getCutout(): Promise<ScreenSides> {
+    return NO_CUTOUT;
   }
 }
 

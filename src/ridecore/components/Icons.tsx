@@ -188,6 +188,15 @@ export const EndIcon = () => (
   </Icon>
 );
 
+/** Thrown away: a ride not kept. */
+export const DiscardIcon = () => (
+  <Icon>
+    <path d="M4.5 7h15" />
+    <path d="M9.5 7V5.2c0-.7.5-1.2 1.2-1.2h2.6c.7 0 1.2.5 1.2 1.2V7" />
+    <path d="m6.5 7 .9 11.6c.1 1.1.9 1.9 2 1.9h5.2c1.1 0 1.9-.8 2-1.9L17.5 7" />
+  </Icon>
+);
+
 export const CheckIcon = () => (
   <Icon>
     <path d="m5 12.5 4.5 4.5L19 7.5" />

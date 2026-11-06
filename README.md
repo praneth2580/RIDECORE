@@ -33,10 +33,11 @@ RIDECORE turns a phone you keep on the handlebar into a riding device. It become
 - **Routes for bikes.** Fastest, Shortest or Less traffic, with up to three routes to compare before you start. Expressways closed to two-wheelers stay off unless you allow them. Both choices are kept for the next trip.
 - **Voice turn-by-turn.** Prompts timed to your speed, into your helmet headset. Miss a turn and it finds a new route.
 - **Turns you see from the corner of your eye.** As a turn comes up, the screen's edge on that side glows lime, brighter as you get closer, and pulses when it's time to turn. Arriving lights both edges green. It starts earlier the faster you ride. Settings → Turn glow switches it off. Routes are worked out on the phone, so once a trip is planned, guidance keeps going when the signal drops.
-- **A ride recorder.** One big face: tap it to record, to pause and to carry on, then **Save ride**. It keeps recording with the screen off. Every ride is kept with its shape, distance, moving time and top speed. Or switch on Auto-record and every trip records itself.
+- **A ride recorder.** One big face: tap it to record, to pause and to carry on. It shows the distance, the time and your average speed. Pause it to **Save ride** or **Discard** it, so a gloved tap can't end a ride by mistake. It keeps recording with the screen off. Every ride is kept with its shape, distance, moving time and top speed. Or switch on Auto-record and every trip records itself.
 - **Music on the ride.** A swipe right of the dash: what any music app on the phone is playing, with big keys to play, pause, go back and skip. Or internet radio in RIDECORE itself: star the stations you like and they come first, then the most played in your country. One plays at a time.
 - **A real home screen.** Make RIDECORE the phone's home app. Home always brings the dash back, Back never leaves it, and your music, calls and other apps are a swipe up. Hold an app to pin it to the top.
 - **Mounted your way.** Landscape or portrait, chosen the first time you open it and held either way up. The screen stays on all the time, or only while you navigate.
+- **The whole screen.** Android's status and navigation bars are hidden; RIDECORE shows the time, signal and battery itself. Swipe in from an edge to see Android's bars for a moment.
 - **Back to the dash on its own.** Leave another screen alone for 30 seconds, or come up to a turn, and the dash returns.
 
 ## Swipe it like a watch
@@ -58,7 +59,7 @@ The way back is always the way you came. Settings and Apps have nothing beside t
 | **Dash** | Speed, the map with the next turn over it, and the trip. "Where to?" when you're not going anywhere. |
 | **Music** | What's playing, with keys to play, pause, go back and skip. Then radio: your starred stations, then the most played. |
 | **Where to** | Your last places as keys, then search. While a trip is under way, it's the trip instead: time to go, distance left, arrival, voice on or off, End (tap twice) and the next eight turns. |
-| **Rides** | The recorder's big face: tap it to record, pause and carry on, then **Save ride**. Under it, every ride you've recorded, drawn as its shape. Tap one to see it on the map. |
+| **Rides** | The recorder's big face: tap it to record, pause and carry on; paused, **Save ride** or **Discard**. Under it, every ride you've recorded, drawn as its shape with its name, and all of them added up. Tap one to see it on the map. |
 | **Settings** | Big keys, lit when on: what the dash, the top line and the corners show, speed zoom, voice, turn glow, fuel and food on the map, auto-record, screen on, how the phone is mounted, the home app, music info, and the way out to the phone's own settings. |
 | **Apps** | The phone's other apps. Tap to open, hold to pin. |
 

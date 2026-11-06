@@ -20,6 +20,7 @@ import {
 import { device, loadKeepScreenOn, saveKeepScreenOn, type Layout } from '../device';
 import { loadDashShows, saveDashShows, type DashShows } from '../dash';
 import { followMedia, togglePlay, useNowPlaying } from '../media';
+import { followCutout } from '../cutout';
 import { networkMark, useMediaQuery, usePhoneStatus } from '../status';
 import { useWeather } from '../weather';
 import { MapZone, type ZoneMode } from '../components/MapZone';
@@ -127,6 +128,9 @@ export function App() {
 
   // The phone's music, followed for as long as RIDECORE runs.
   useEffect(() => followMedia(), []);
+
+  // Full screen: the page keeps its words clear of the camera's cut-out as the phone turns.
+  useEffect(() => followCutout(), []);
 
   useEffect(() => {
     void device

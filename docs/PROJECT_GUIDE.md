@@ -86,7 +86,7 @@ src/ridecore/                   The app
   overrides/                    TrailCompass modules RIDECORE replaces (§11)
   styles/ridecore.css           The whole look (§13)
 android/app/src/main/java/com/praneth2580/ridecore/
-  RideCoreDevicePlugin.java     Layout lock, home screen, the phone's apps, music (§10)
+  RideCoreDevicePlugin.java     Layout lock, full screen, home screen, the phone's apps, music (§10)
   RideCoreMedia.java            Follows and controls what the phone's music apps play
   RideCoreStatus.java           SIM and signal, Wi-Fi or offline, airplane mode, a headset
   RideCoreMediaListener.java    The notification listener that access to see what plays is given to
@@ -161,6 +161,7 @@ Rules the shell keeps:
 - **The way back is the way in.** While Settings or Apps is open, the outer pager is held on the dash (`hold`), so a sideways swipe there goes nowhere instead of carrying the column off to another screen. Each has a handle on its edge toward the dash (`Page`'s `handle`): outside its scrolling list, so a swipe on it always goes back, however far down the list is; a tap does too.
 - **Leaving the dash's column sideways closes it.** Only possible from the dash itself now; `changePage` still snaps the column back without animating, as a safeguard.
 - **The status line** (`StatusLine`) sits above both pagers while the dash mode is on, so it shows over every page. It hides while the map has the screen.
+- **Full screen.** Android's status and navigation bars are hidden by the plugin (§10.1), and the status line takes the status bar's place. The page then runs under the camera's cut-out (from Android 15), so `followCutout()` (`cutout.ts`) puts the plugin's measure of it into `--rc-cut-*`, and `--rc-top`, `--rc-right`, `--rc-bottom` and `--rc-left` take whichever is larger, that or `env(safe-area-inset-*)`. Older WebViews report the inset as 0.
 - **The screen stays on** (`useKeepAwake`) all the time unless Settings → Screen on is set to Navigating, and always while navigating.
 - **A clean map to start with.** On the very first start RIDECORE switches TrailCompass's fuel and food pins off (`mapService.setOverlaysShown(false)`) and marks that done in `ridecore.pinsDefault`. Settings → Fuel & food switches them back on.
 - **Music and weather run from the start.** `followMedia()` (in `media.ts`) follows the phone's music for as long as RIDECORE runs. `useWeather()` fetches the weather while either weather part (dash or top line) is switched on.
@@ -259,9 +260,11 @@ Replaces Where to while navigation is `navigating`, `rerouting`, `paused` or `ar
 - The next 8 turns (`turns.ts`), each with its arrow and distance. Beside the rest in landscape, under it in portrait.
 
 ### `RidesPage.tsx` — Rides
-Two swipes right of the dash, beyond Where to. On top, the recorder (`components/Recorder.tsx`): one big face to tap to record, pause, carry on (`rideLogService.start/pause/resume`). While a ride is on, the face shows its distance and running time, and a Save ride key finishes it (`rideLogService.finish()`; the saved toast comes from `useRideCore`). The line under the title says Recording, Recording with navigation, Paused or Not recording, and is red while recording.
+Two swipes right of the dash, beyond Where to. On top, the recorder (`components/Recorder.tsx`): one big face to tap to record, pause, carry on (`rideLogService.start/pause/resume`). While a ride is on, the face shows REC (a blinking red dot) or Paused, the distance, the running time (blinking while paused, like a stopwatch), the average speed (`averageKmh()`, after 30 s and 100 m) and a glyph for what a tap does: pause, or a red play to carry on.
 
-Under it, "Past rides": every ride recorded, newest first, as cards: the track's shape, distance, moving time, date and top speed. Read again each time the page comes into view and when a ride is saved. In landscape the face sits beside the rides, which scroll on their own. A tap on a ride shows it on the map: `App` opens `map` mode without following the rider, then calls `rideLogService.showOnMap()` 80 ms later, so the ride is framed at the map's full-screen size. Closing the map hides it again.
+While recording the face is the only control: a note under it says "Pause to save or discard" ("Saves itself when the trip ends" for a ride navigation started). Paused, two round keys appear: Save ride (`rideLogService.finish()`; the saved toast comes from `useRideCore`) and Discard (`rideLogService.discard()`), which takes a second tap within 3 s, like End trip. In landscape they stand beside the face. The line under the title (`recorderLine()`) says Recording, Recording with navigation, Paused, Auto-record on or Not recording, and is red while recording.
+
+Under it, "Past rides", with how many and how far in all on the right (`rideTotals()`): every ride recorded, newest first, as cards: the track's shape, its name, distance, moving time and top speed (left out when the GPS never gave one), and date. Read again each time the page comes into view and when a ride is saved. In landscape the recorder has its own half and the rides scroll beside it. A tap on a ride shows it on the map: `App` opens `map` mode without following the rider, then calls `rideLogService.showOnMap()` 80 ms later, so the ride is framed at the map's full-screen size. Closing the map hides it again.
 
 ---
 
@@ -271,7 +274,7 @@ Under it, "Past rides": every ride recorded, newest first, as cards: the track's
 |---|---|
 | `Pager.tsx` | The watch-like pager. Its children are pages, laid side by side (`x`) or stacked (`y`); CSS scroll snapping does the swiping. It works out the page in view from the scroll position, draws the dots, and exposes `show(index, smooth?)`. `hold` pins it to one page, also when the screen resizes (the keyboard, the phone turning); `solo` hides the other pages too. After `returnAfterMs` without a touch, key press, scroll or focus inside it, it goes back to `home`, calling `onReturn` first. |
 | `Page.tsx` | One screen: a small centred title, an optional line under it (`subTone="live"` makes it red), an optional `top` that stays put (the search field), and the body. `fill` makes it exactly one screen, its body scrolling inside. `handle` puts a "Dash" grip on the edge toward the dash (Settings: bottom, Apps: top), outside the body, so a swipe on it goes back however long the list; a tap does too. |
-| `Recorder.tsx` | The ride recorder's face and its Save ride key, on the Rides screen. |
+| `Recorder.tsx` | The ride recorder's face, and once paused its Save ride and Discard keys, on the Rides screen. |
 | `Key.tsx` | A device key: an icon, a word or two and a state, lit lime when on. `on` makes it a switch; `steps` draws dots for a setting with a few values. Without either it's an action key. |
 | `Toggle.tsx` | A whole-row on/off switch with a hint. Only used for Expressways in the route panel. |
 | `MapZone.tsx` | The map in all three modes (§5.2): `MapView`, the turn banner (a button when it says Arrived), "Where to?" when idle, the close chip and "back to me" in `map` mode, or the route panel in `route` mode. It tells `mapService` what the banner, buttons or panel cover (`setTopInset`, `setBottomInset`, `setSideInset`) so the rider and routes stay clear of them, re-measuring on every resize. It switches zoom by speed on in `dash` mode (§11). |
@@ -302,6 +305,8 @@ Under it, "Past rides": every ride recorded, newest first, as cards: the track's
 | `status.ts` | The phone's state for the corners. `networkMark()` picks what to show: airplane mode; else Wi-Fi; else signal bars with a SIM; else "Offline" (nothing when online without either). A word only when something's wrong: "No signal" (0 bars), "No internet", "Offline". `headsetName()`: the headset's name, or "Bluetooth" / "Headset". `usePhoneStatus(active)` follows the `status` event and reads again on resume and every 15 s while active. Also `useMediaQuery()`. | `status.test.ts` |
 | `glow.ts` | `turnGlow(kind, distance, speed)`: the edge glow for the next turn, or null. The side from the turn's kind (left, right; a U-turn right; arriving both); where it starts from the speed (12 s out, 150–500 m); its strength from 0.3 to 1 as the turn comes (0.65 of that for a slight turn); urgent inside 35 m or 3 s. | `glow.test.ts` |
 | `format.ts` | Speed in km/h (none for a stale fix), the clock and date in the phone's own format, compass points, the ride timer, file sizes. | — |
+| `recording.ts` | The recorder in words and numbers: `recorderLine()` (the Rides screen's sub line), `recorderNote()` (under the face while recording), `averageKmh()` (distance over time recorded, null before 30 s and 100 m), `rideTotals()`, `topKmh()` (null for 0). | `recording.test.ts` |
+| `cutout.ts` | `followCutout()` keeps `--rc-cut-top/right/bottom/left` on `<html>` at the camera cut-out's size, from the plugin's `getCutout()` and `cutout` event (a turn heard first wins over the start-up answer). `cutoutVars()`: whole pixels, nothing below 0. | `cutout.test.ts` |
 | `device.ts` | The web side of `RideCoreDevicePlugin` (§10), with a browser fallback that keeps the layout in `localStorage` and has no home screen, apps or phone music (`NO_PHONE_MEDIA`). Also the Screen on setting (`loadKeepScreenOn`, on unless turned off). | — |
 | `map-theme.ts` | RIDECORE's map colours (`RIDECORE_MAP_THEME`): TrailCompass's `dark` preset underneath, a neutral black basemap, the route in green, the rider in lime. A build's env still wins ([ridecore/README.md → Map colours](../ridecore/README.md#map-colours)). | `map-theme.test.ts` |
 | `app/useBattery.ts` | The battery level and charging, from the web view's Battery API. Null where it isn't available. | — |
@@ -329,6 +334,10 @@ Under it, "Past rides": every ride recorded, newest first, as cards: the track's
 | `media` event | What plays changed: another track, paused, another app. Also sent on every resume. |
 | `getStatus()` | The phone's state for the dash (`PhoneStatus`): airplane mode; SIM present, its signal level (0–4, Android 9 and later) and operator; Wi-Fi or mobile data; online (validated); a headset (Bluetooth first, else wired or USB) and its name. |
 | `status` event | The connection or the headset changed (network and audio-device callbacks, settled for 300 ms). The signal level isn't pushed: the web side reads it again every 15 s while the dash shows (`usePhoneStatus`). |
+| `getCutout()` | The camera's cut-out, each side in CSS pixels (`displayCutout` insets over the screen density; from Android 15 the system bars' insets too, which are 0 while hidden). |
+| `cutout` event | The cut-out moved, as the phone turned. |
+
+**Full screen.** The plugin hides both system bars with `WindowInsetsControllerCompat` (`BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE`: a swipe in from an edge shows them over the page for a moment). It hides them in `load()`, on resume, after `setLayout`, and whenever the window gets focus back (the notification shade, a permission dialog). It reads the cut-out from an insets listener on the WebView that still passes the insets on to the WebView's own handling.
 
 The plugin starts `RideCoreMedia` in `load()`, starts it again and sends a `media` event on resume (access may just have been given in Android's settings), and stops it in `handleOnDestroy()`.
 

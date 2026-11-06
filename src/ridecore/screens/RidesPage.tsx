@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { formatDuration, formatKm, formatSavedAt, rideLogService, type RideRecord } from '../engine';
 import { Page } from '../components/Page';
-import type { RideCoreState } from '../app/useRideCore';
 import { Recorder, type RecorderProps } from '../components/Recorder';
 import { TrackThumb } from '../components/TrackThumb';
+import { recorderLine, rideTotals, topKmh } from '../recording';
 
 interface RidesPageProps extends RecorderProps {
   /** In view: read again, so a ride just saved is there. */
@@ -11,23 +11,17 @@ interface RidesPageProps extends RecorderProps {
   onShowRide: (ride: RideRecord) => void;
 }
 
-/** What the recorder is doing, in a few words: the line under the screen's name. */
-function recorderState({ ride }: RideCoreState): { text: string; live: boolean } {
-  if (ride?.state === 'recording') return { text: ride.auto ? 'Recording with navigation' : 'Recording', live: true };
-  if (ride?.state === 'paused') return { text: 'Paused', live: false };
-  return { text: 'Not recording', live: false };
-}
-
 /**
  * Rides, the screen beyond Where to: the recorder's face to start, pause and save a ride,
- * and every ride recorded under it, newest first, as cards with its shape. Tap one to see
- * it on the map. Side by side in landscape.
+ * and every ride recorded under it, newest first, as cards with its shape and name, all
+ * of them added up in the heading. Tap one to see it on the map. Side by side in landscape.
  */
 export function RidesPage({ active, onShowRide, core, onRun }: RidesPageProps) {
   const [rides, setRides] = useState<RideRecord[] | null>(null);
   // A ride just saved: the list reads again.
   const recording = core.ride?.id ?? null;
-  const state = recorderState(core);
+  const state = recorderLine(core.ride, rideLogService.getAutoRecord());
+  const totals = rides ? rideTotals(rides) : null;
 
   useEffect(() => {
     if (!active) return;
@@ -46,25 +40,37 @@ export function RidesPage({ active, onShowRide, core, onRun }: RidesPageProps) {
       <div className="rc-rides">
         <Recorder core={core} onRun={onRun} />
         <section className="rc-rides-past" aria-label="Past rides">
-          <h3 className="rc-section">{rides && rides.length > 0 ? `Past rides · ${rides.length}` : 'Past rides'}</h3>
+          <h3 className="rc-section">
+            Past rides
+            {totals && totals.count > 0 ? (
+              <span>
+                {totals.count} · {formatKm(totals.meters)}
+              </span>
+            ) : null}
+          </h3>
           {!rides ? (
             <p className="rc-note">Loading rides…</p>
           ) : rides.length === 0 ? (
             <p className="rc-note">None yet. Tap the face to record your first.</p>
           ) : (
             <ul className="rc-cards">
-              {rides.map((ride) => (
-                <li key={ride.id}>
-                  <button type="button" className="rc-card" onClick={() => onShowRide(ride)}>
-                    <TrackThumb line={ride.preview} />
-                    <strong>{formatKm(ride.distanceMeters)}</strong>
-                    <small>
-                      {formatDuration(ride.movingSeconds)} · {formatSavedAt(ride.startedAt)}
-                    </small>
-                    <small>top {Math.round(ride.maxSpeedMps * 3.6)} km/h</small>
-                  </button>
-                </li>
-              ))}
+              {rides.map((ride) => {
+                const top = topKmh(ride);
+                return (
+                  <li key={ride.id}>
+                    <button type="button" className="rc-card" onClick={() => onShowRide(ride)}>
+                      <TrackThumb line={ride.preview} />
+                      <b>{ride.name}</b>
+                      <strong>{formatKm(ride.distanceMeters)}</strong>
+                      <small>
+                        {formatDuration(ride.movingSeconds)}
+                        {top === null ? null : ` · top ${top} km/h`}
+                      </small>
+                      <small>{formatSavedAt(ride.startedAt)}</small>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

@@ -84,9 +84,10 @@ as on Android. Left and right, from the dash:
    time to go, distance left and arrival as big as the dash's numbers, two round keys
    (voice; End, two taps, no dialog) and the next 8 turns, beside them in landscape.
 3. Rides (`screens/RidesPage.tsx`), beyond Where to: the recorder's big face
-   (`components/Recorder.tsx`); tap to record, pause and carry on, and Save keeps the
-   ride. Under it, every ride recorded, as cards with its shape; tap one to see it on
-   the map.
+   (`components/Recorder.tsx`) with the distance, time and average speed; tap to record,
+   pause and carry on. Only once paused do Save and Discard (two taps) appear, so a
+   gloved tap can't end a ride. Under it, every ride recorded, as cards with its shape
+   and name, the total in the heading; tap one to see it on the map.
 
 Up and down, on the dash only, as on a phone's home screen: swipe down for settings,
 swipe up for the phone's apps (`screens/AppsPage.tsx`). Tap an app to open it; hold one
@@ -155,6 +156,11 @@ RIDECORE is made for a phone kept for it alone, as that phone's home screen.
   or offline, airplane mode and a connected headset (`getStatus`, the `status` event;
   `RideCoreStatus.java`). It needs no permission, so the network type (4G, 5G) isn't
   shown: that would take the "make and manage phone calls" permission.
+- **Full screen.** `RideCoreDevicePlugin` hides Android's status and navigation bars (a
+  swipe in from an edge shows them for a moment); RIDECORE's status line has the time,
+  signal and battery. From Android 15 the page runs under the camera's cut-out, so the
+  plugin reports its size (`getCutout`, the `cutout` event) and `cutout.ts` keeps the
+  page's edges clear of it.
 - **Screen on.** On all the time unless Settings → Screen on is set to Navigating.
 - **The way out.** Settings → Phone settings opens the phone's own settings (Wi-Fi,
   Bluetooth, and Apps → Default apps → Home app to give the home screen back).
@@ -293,6 +299,10 @@ Keep this list short and current. These are the only places a merge can conflict
   can list the phone's apps (Android 11 and later hide them otherwise); and the
   `RideCoreMediaListener` service, so the rider can give RIDECORE notification access to
   see what the phone plays. TrailCompass's launcher filter is untouched.
+- `src/services/ride-log.service.ts`: a fix, worth sending upstream. `discard()` finished
+  the recorder, the recorder said "finished", and that was taken for a ride finished from
+  the notification, so a discarded ride was saved anyway (TrailCompass's own Discard too).
+  `discard()` now marks the ride (`discarding`) and `onRecorder` leaves it alone.
 - `src/services/map.service.ts`: `setFollowZoomBySpeed()`, so the camera following the
   rider zooms by speed without navigating too (the dash). Off unless called, so
   TrailCompass behaves as before; a candidate to send upstream. Three small spots: the

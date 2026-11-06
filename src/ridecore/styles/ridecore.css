@@ -30,10 +30,12 @@
   --rc-radius: 28px;
   --rc-radius-sm: 18px;
   --rc-font: 'Lexend', 'Segoe UI', system-ui, sans-serif;
-  --rc-top: env(safe-area-inset-top, 0px);
-  --rc-right: env(safe-area-inset-right, 0px);
-  --rc-bottom: env(safe-area-inset-bottom, 0px);
-  --rc-left: env(safe-area-inset-left, 0px);
+  /* What the page keeps clear: full screen, that's the camera's cut-out. --rc-cut-* is the
+     phone's own measure, for WebViews that report it as 0 (cutout.ts). */
+  --rc-top: max(env(safe-area-inset-top, 0px), var(--rc-cut-top, 0px));
+  --rc-right: max(env(safe-area-inset-right, 0px), var(--rc-cut-right, 0px));
+  --rc-bottom: max(env(safe-area-inset-bottom, 0px), var(--rc-cut-bottom, 0px));
+  --rc-left: max(env(safe-area-inset-left, 0px), var(--rc-cut-left, 0px));
 
   /* TrailCompass's tokens, for what its stylesheet still draws: the map's markers,
      place popups and credit. */
@@ -2039,8 +2041,9 @@ button.rc-trip {
 .rc-rec {
   display: grid;
   justify-items: center;
-  gap: 1.4rem;
-  padding-top: 0.6rem;
+  gap: 1.1rem;
+  /* The recording glow reaches 10px past the face. */
+  padding-top: 0.75rem;
 }
 
 .rc-rec-face {
@@ -2081,6 +2084,44 @@ button.rc-trip {
   }
 }
 
+/* Recording or paused: what it's doing, the distance, the timer, the average, and what a
+   tap does, as a watch's stopwatch shows it. */
+.rc-rec-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 2cqi;
+  margin-bottom: 3cqi;
+  color: var(--rc-muted);
+  font-size: 5cqi;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.rc-rec-face[data-state='recording'] .rc-rec-state {
+  color: var(--rc-red);
+}
+
+.rc-rec-face[data-state='recording'] .rc-rec-state::before {
+  content: '';
+  width: 3.2cqi;
+  height: 3.2cqi;
+  border-radius: 50%;
+  background: currentColor;
+  animation: rc-rec-blink 1.2s ease-in-out infinite;
+}
+
+/* A stopped stopwatch blinks its time. */
+.rc-rec-face[data-state='paused'] .rc-rec-time {
+  animation: rc-rec-blink 1.6s ease-in-out infinite;
+}
+
+@keyframes rc-rec-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
 .rc-rec-value {
   font-size: 17cqi;
   font-weight: 330;
@@ -2094,6 +2135,42 @@ button.rc-trip {
   color: var(--rc-copy);
   font-size: 8cqi;
   font-variant-numeric: tabular-nums;
+}
+
+.rc-rec-avg {
+  margin-top: 1.5cqi;
+  color: var(--rc-muted);
+  font-size: 5.5cqi;
+  font-variant-numeric: tabular-nums;
+}
+
+/* What a tap does: pause while recording; carry on (red: it records) while paused. */
+.rc-rec-glyph {
+  display: grid;
+  place-items: center;
+  width: 13cqi;
+  height: 13cqi;
+  margin-top: 4.5cqi;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--rc-text);
+}
+
+.rc-rec-glyph svg {
+  width: 6cqi;
+  height: 6cqi;
+}
+
+.rc-rec-face[data-state='paused'] .rc-rec-glyph {
+  background: var(--rc-red);
+  color: #fff;
+}
+
+.rc-rec-note {
+  margin: 0;
+  color: var(--rc-muted);
+  font-size: 0.85rem;
+  text-align: center;
 }
 
 .rc-rec-dot {
@@ -2113,19 +2190,43 @@ button.rc-trip {
   margin-top: 0;
 }
 
-/* Landscape: the face and Save side by side, so both fit the short screen. */
+/* Landscape: paused, Save and Discard stand beside the face, so all fit the short screen. */
 @media (orientation: landscape) {
   .rc-rec {
-    grid-template-columns: auto auto;
-    align-items: center;
-    justify-content: center;
-    gap: 3rem;
+    grid-template-areas: 'face' 'note';
+    align-content: center;
+    row-gap: 0.7rem;
     padding-top: 0;
   }
 
+  .rc-rec[data-state='paused'] {
+    grid-template-columns: auto auto;
+    grid-template-areas: 'face actions';
+    align-items: center;
+    column-gap: 1.8rem;
+  }
+
   .rc-rec-face {
-    width: min(40vw, calc(100dvh - 8rem));
+    grid-area: face;
     border-width: 8px;
+  }
+
+  .rc-rec-note {
+    grid-area: note;
+  }
+
+  .rc-rec .rc-actions {
+    grid-area: actions;
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-rec-face[data-state] .rc-rec-state::before,
+  .rc-rec-face[data-state] .rc-rec-time,
+  .rc-rec-face[data-state='recording'] {
+    animation: none;
   }
 }
 
@@ -2376,20 +2477,40 @@ button.rc-trip {
   margin-top: 0.3rem;
 }
 
+/* "Past rides", and on the right all of them added up. */
+.rc-rides-past .rc-section {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.rc-rides-past .rc-section span {
+  color: var(--rc-copy);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Landscape: the recorder in its own half, the rides beside it. The halves stay put
+   whichever state the recorder is in. */
 @media (orientation: landscape) {
   .rc-rides {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
     height: 100%;
-    gap: 1.8rem;
+    gap: 1.6rem;
   }
 
+  /* Room above and below for the recording glow, which the scrolling page would cut. */
   .rc-rides .rc-rec {
     align-self: center;
-    gap: 1.4rem;
+    padding-block: 12px;
   }
 
   .rc-rides .rc-rec-face {
-    width: min(28vw, calc(100dvh - 9rem));
+    width: min(28vw, calc(100dvh - 11.5rem));
   }
 
   .rc-rides-past {

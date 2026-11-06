@@ -1,5 +1,6 @@
 package com.praneth2580.ridecore;
 
+import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
@@ -13,6 +14,14 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.provider.Settings;
 import android.util.Base64;
+import android.view.View;
+import android.view.ViewTreeObserver;
+import android.view.Window;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -26,8 +35,9 @@ import java.util.List;
  * RIDECORE on a phone kept for it alone: the screen layout the rider picked, held
  * whichever way the phone is turned, and RIDECORE as the phone's home screen, opening
  * the phone's other apps and going back to the dash when Home is pressed, the music the
- * phone plays (RideCoreMedia), and its signal and headset for the dash (RideCoreStatus). Web side: src/ridecore/device.ts. Registered in
- * MainActivity.
+ * phone plays (RideCoreMedia), and its signal and headset for the dash (RideCoreStatus).
+ * Full screen: Android's own bars hidden, the dash shows the time, signal and battery.
+ * Web side: src/ridecore/device.ts. Registered in MainActivity.
  */
 @CapacitorPlugin(name = "RideCoreDevice")
 public class RideCoreDevicePlugin extends Plugin {
@@ -39,11 +49,20 @@ public class RideCoreDevicePlugin extends Plugin {
 
     private RideCoreMedia media;
     private RideCoreStatus status;
+    /** The screen the page must keep clear, in CSS pixels: the camera's cut-out. */
+    private volatile JSObject cutout = sides(Insets.NONE, 1f);
+    private final ViewTreeObserver.OnWindowFocusChangeListener refocused = focused -> {
+        if (focused) fullScreen();
+    };
 
     @Override
     public void load() {
         // As the app starts, before the page draws, so the screen never turns the wrong way first.
         apply(prefs().getString(LAYOUT, null));
+        fullScreen();
+        // Back from the notification shade, a permission dialog or the keyboard: hidden again.
+        if (getActivity() != null) getActivity().getWindow().getDecorView().getViewTreeObserver().addOnWindowFocusChangeListener(refocused);
+        followCutout();
         media = new RideCoreMedia(getContext(), snapshot -> notifyListeners("media", snapshot));
         media.start();
         status = new RideCoreStatus(getContext(), snapshot -> notifyListeners("status", snapshot));
@@ -60,6 +79,7 @@ public class RideCoreDevicePlugin extends Plugin {
     @Override
     protected void handleOnResume() {
         super.handleOnResume();
+        fullScreen();
         if (media == null) return;
         media.start();
         notifyListeners("media", media.snapshot());
@@ -67,6 +87,10 @@ public class RideCoreDevicePlugin extends Plugin {
 
     @Override
     protected void handleOnDestroy() {
+        if (getActivity() != null) {
+            ViewTreeObserver observer = getActivity().getWindow().getDecorView().getViewTreeObserver();
+            if (observer.isAlive()) observer.removeOnWindowFocusChangeListener(refocused);
+        }
         if (media != null) media.stop();
         if (status != null) status.stop();
         super.handleOnDestroy();
@@ -124,8 +148,15 @@ public class RideCoreDevicePlugin extends Plugin {
         prefs().edit().putString(LAYOUT, layout).apply();
         getActivity().runOnUiThread(() -> {
             apply(layout);
+            fullScreen();
             call.resolve();
         });
+    }
+
+    /** The camera's cut-out, each side in CSS pixels, for the page to keep its words clear of. */
+    @PluginMethod
+    public void getCutout(PluginCall call) {
+        call.resolve(cutout);
     }
 
     /** Whether pressing Home opens RIDECORE. */
@@ -256,6 +287,51 @@ public class RideCoreDevicePlugin extends Plugin {
                 ? ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
                 : ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
         getActivity().setRequestedOrientation(orientation);
+    }
+
+    /**
+     * Android's status and navigation bars hidden: the whole screen is RIDECORE's. A swipe
+     * in from the edge shows them for a moment, over the page, and they hide again by
+     * themselves. Hidden again whenever RIDECORE comes back to the front.
+     */
+    private void fullScreen() {
+        Activity activity = getActivity();
+        if (activity == null) return;
+        Window window = activity.getWindow();
+        WindowInsetsControllerCompat bars = WindowCompat.getInsetsController(window, window.getDecorView());
+        bars.setSystemBarsBehavior(WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        bars.hide(WindowInsetsCompat.Type.systemBars());
+    }
+
+    /**
+     * Follows the camera's cut-out as the phone turns. From Android 15 the page is drawn
+     * under it with the bars hidden, and older WebViews tell the page nothing of it. The
+     * WebView still handles the insets itself, as before.
+     */
+    private void followCutout() {
+        View page = bridge.getWebView();
+        if (page == null) return;
+        ViewCompat.setOnApplyWindowInsetsListener(page, (view, insets) -> {
+            int kinds = WindowInsetsCompat.Type.displayCutout();
+            // From Android 15 the page spans the bars too: should they ever stay, keep clear of them.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) kinds |= WindowInsetsCompat.Type.systemBars();
+            JSObject next = sides(insets.getInsets(kinds), view.getResources().getDisplayMetrics().density);
+            if (!next.toString().equals(cutout.toString())) {
+                cutout = next;
+                notifyListeners("cutout", next);
+            }
+            return ViewCompat.onApplyWindowInsets(view, insets);
+        });
+        ViewCompat.requestApplyInsets(page);
+    }
+
+    private static JSObject sides(Insets insets, float density) {
+        JSObject sides = new JSObject();
+        sides.put("top", Math.round(insets.top / density));
+        sides.put("right", Math.round(insets.right / density));
+        sides.put("bottom", Math.round(insets.bottom / density));
+        sides.put("left", Math.round(insets.left / density));
+        return sides;
     }
 
     private SharedPreferences prefs() {
