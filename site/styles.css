@@ -573,6 +573,23 @@ section[id] {
   }
 }
 
+/* A last card alone on its row takes the whole row, whatever the number of cards. */
+@media (min-width: 620px) and (max-width: 1039px) {
+  .feature:last-child:nth-child(2n + 1) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1040px) {
+  .feature:last-child:nth-child(3n + 1) {
+    grid-column: 1 / -1;
+  }
+}
+
+.feature:last-child p {
+  max-width: 60ch;
+}
+
 .feature {
   padding: 1.5rem 1.4rem 1.6rem;
   border: 1px solid var(--border);
