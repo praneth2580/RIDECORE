@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Your bike's dash, on a spare phone.</strong><br />
-  Free for Android. Early alpha.
+  Free for Android. Version 1.
 </p>
 
 <p align="center">
@@ -116,7 +116,7 @@ Partly. Routes are worked out on the phone, so once a trip is planned, turn-by-t
 <details>
 <summary><strong>Is it finished?</strong></summary>
 
-Not yet. RIDECORE is an early alpha: expect rough edges, and please [report what breaks](https://github.com/praneth2580/RIDECORE/issues).
+Version 1 is out and does everything on this page. It's young, so please [report what breaks](https://github.com/praneth2580/RIDECORE/issues).
 </details>
 
 <details>

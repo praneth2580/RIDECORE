@@ -263,18 +263,21 @@ website on GitHub Pages" covers how.
 
 ## Releasing
 
-RIDECORE's releases are GitHub pre-releases on praneth2580/RIDECORE, tagged
-`ridecore-v<version>` so they never clash with TrailCompass's `v<version>` tags.
+RIDECORE's releases are GitHub releases on praneth2580/RIDECORE, tagged
+`ridecore-v<version>` so they never clash with TrailCompass's `v<version>` tags. The
+alphas were pre-releases; from 1.0.0 they're full releases (an alpha or beta still goes
+out with `--prerelease`). The first five lines of the notes show in the app's update
+prompt, so lead with what riders will notice.
 TrailCompass's `npm run release:*` is not for RIDECORE: it bumps TrailCompass's version
 lines and titles the release "TrailCompass". The APK's version name comes from
 `ridecore/version.gradle`, leaving `build.gradle` alone:
 
 ```bash
 npm run build && npx cap sync android
-cd android && ./gradlew assembleDebug --init-script ../ridecore/version.gradle -Pridecore.versionName=0.1.0-alpha.2
-cp app/build/outputs/apk/debug/app-debug.apk ridecore-0.1.0-alpha.2.apk
-git tag ridecore-v0.1.0-alpha.2 && git push origin main ridecore-v0.1.0-alpha.2
-gh release create ridecore-v0.1.0-alpha.2 ridecore-0.1.0-alpha.2.apk --prerelease --title "RIDECORE 0.1.0-alpha.2"
+cd android && ./gradlew assembleDebug --init-script ../ridecore/version.gradle -Pridecore.versionName=1.0.1
+cp app/build/outputs/apk/debug/app-debug.apk ridecore-1.0.1.apk
+git tag ridecore-v1.0.1 && git push origin main ridecore-v1.0.1
+gh release create ridecore-v1.0.1 ridecore-1.0.1.apk --title "RIDECORE 1.0.1" --notes-file notes.md
 ```
 
 APKs are debug-signed with this machine's debug key, as TrailCompass's are. A phone
