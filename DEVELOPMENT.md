@@ -30,7 +30,7 @@ How to build, run, test and release RIDECORE, and how its website is published. 
 | Build | Vite 8, with `ridecore/vite-plugin.ts` starting RIDECORE instead of TrailCompass |
 | Engine | TrailCompass, in this repo as the `upstream` remote: on-device routing (A\* over OpenStreetMap roads from Overpass), turn-by-turn, voice, GPS, ride recording, storage |
 | Native shell | Capacitor 7, Android only (min Android 6.0, SDK 23; target SDK 35) |
-| Android plugins | RIDECORE's `RideCoreDevicePlugin` (layout lock, home screen, the phone's apps, the phone's music), TrailCompass's `AppUpdaterPlugin`, `DownloadsPlugin`, `MapFilesPlugin` and `RideLocationPlugin`, and Capacitor's Geolocation, Filesystem, Preferences, Share, App, Keep Awake and Text-to-Speech |
+| Android plugins | RIDECORE's `RideCoreDevicePlugin` (layout lock, home screen, the phone's apps, the phone's music, signal and headset), TrailCompass's `AppUpdaterPlugin`, `DownloadsPlugin`, `MapFilesPlugin` and `RideLocationPlugin`, and Capacitor's Geolocation, Filesystem, Preferences, Share, App, Keep Awake and Text-to-Speech |
 | Map | MapLibre GL JS 6 with OpenFreeMap's Liberty style, recoloured in RIDECORE's colours |
 | Tests and lint | Vitest 4 (Node environment), oxlint |
 | Hosting | GitHub Releases (APKs, as pre-releases) and GitHub Pages (website and APK copy) |
@@ -86,15 +86,16 @@ ridecore/                     RIDECORE's build tooling: the Vite plugin, the APK
 src/ridecore/                 RIDECORE's app
   main.tsx                    Entry point (the Vite plugin starts this instead of src/main.tsx)
   app/                        The shell (App.tsx), engine start-up (useRideCore.ts), battery
-  screens/                    Music, Settings, Apps, Where to, Trip, Ride recorder, Rides, the first-start layout picker
-  components/                 Pager, Page, Key, map zone, speed dial, status line, route panel, icons…
+  screens/                    Music, Settings, Apps, Where to, Trip, Rides, the first-start layout picker
+  components/                 Pager, Page, Key, map zone, speed dial, status line, route panel, recorder, icons…
   engine.ts                   The one door into TrailCompass
   overrides/                  TrailCompass modules RIDECORE replaces (same paths as under src/)
   styles/ridecore.css         RIDECORE's look
-  media.ts, radio.ts, weather.ts, dash.ts, recent.ts, …
+  media.ts, radio.ts, weather.ts, status.ts, glow.ts, dash.ts, recent.ts, …
                               Small modules, each with its test
 android/app/src/main/java/com/praneth2580/ridecore/
-                              RideCoreDevicePlugin.java, RideCoreMedia.java, RideCoreMediaListener.java
+                              RideCoreDevicePlugin.java, RideCoreMedia.java, RideCoreMediaListener.java,
+                              RideCoreStatus.java
 docs/PROJECT_GUIDE.md         RIDECORE's code, file by file
 site/                         RIDECORE's website: static HTML, CSS, a small script and images
 .github/workflows/pages.yml   Publishes the website and its APK copy
@@ -111,7 +112,7 @@ scripts/                      Android build and run, data, icons and website bui
 
 RIDECORE is its own app on TrailCompass's engine. `index.html` is TrailCompass's, but `ridecore/vite-plugin.ts` makes it start `src/ridecore/main.tsx`. RIDECORE's screens reach the engine only through `src/ridecore/engine.ts`. When a TrailCompass merge changes an API, the type check fails there, and that's the one place RIDECORE adapts. `src/ridecore/app/useRideCore.ts` starts the engine the way TrailCompass's `App.tsx` does, minus TrailCompass's update check.
 
-The app is the phone's home screen, worked like a watch. Two `Pager`s in `src/ridecore/app/App.tsx` lay out the screens. Across: music, the dash, Where to (or the trip while navigating), the ride recorder and the rides. Down the dash's column: settings above, the phone's apps below. The dash comes back on Home, after 30 s alone, and when a turn or the destination is near. Choosing a route takes the whole screen, with the route panel over the map.
+The app is the phone's home screen, worked like a watch. Two `Pager`s in `src/ridecore/app/App.tsx` lay the screens out as a plus around the dash. Across: music, the dash, Where to (or the trip while navigating), then Rides, with the ride recorder on top. Down the dash's column: settings above, the phone's apps below; while either is open, sideways swipes do nothing, and the way back to the dash is the way in. The dash comes back on Home, after 30 s alone, and when a turn or the destination is near. Choosing a route takes the whole screen, with the route panel over the map.
 
 The [Project Guide](docs/PROJECT_GUIDE.md) goes through all of this file by file. [ridecore/README.md](ridecore/README.md) explains the rules that keep TrailCompass merges clean, and lists every TrailCompass file RIDECORE edits.
 
@@ -124,7 +125,7 @@ npm run cap:run          # build, sync, assemble, install and launch the debug A
 Or one step at a time: `npm run cap:sync`, `npm run cap:build`, `npm run cap:install`. To work in Android Studio, run `npx cap open android`. If no phone is connected, `cap:install` and `cap:run` start an emulator; set `ANDROID_AVD` to choose which one.
 
 - **App ID** `com.praneth2580.ridecore`, so RIDECORE installs next to TrailCompass. The Java code keeps TrailCompass's `com.praneth2580.trailcompass` package (`namespace` in `build.gradle`) so its files merge as they are.
-- **RIDECORE's native code** is in `android/app/src/main/java/com/praneth2580/ridecore/`. `RideCoreDevicePlugin.java` holds the screen in the chosen layout from start-up, reports and opens the home-app setting, lists the phone's apps with their icons (`listApps`), opens one (`openApp`), opens Android's settings, and tells the web side when Home is pressed (the `home` event). It is registered in `MainActivity.onCreate`. `RideCoreMedia.java` follows the phone's media sessions for the Music screen: what plays and its controls. Seeing what plays needs notification access, which only the rider can give (Settings → Music info opens Android's screen for it). `RideCoreMediaListener` is the service that access is given to; it does nothing itself. Without access, play, pause and skip are still sent, as a headset's media buttons are.
+- **RIDECORE's native code** is in `android/app/src/main/java/com/praneth2580/ridecore/`. `RideCoreDevicePlugin.java` holds the screen in the chosen layout from start-up, reports and opens the home-app setting, lists the phone's apps with their icons (`listApps`), opens one (`openApp`), opens Android's settings, and tells the web side when Home is pressed (the `home` event). It is registered in `MainActivity.onCreate`. `RideCoreMedia.java` follows the phone's media sessions for the Music screen: what plays and its controls. Seeing what plays needs notification access, which only the rider can give (Settings → Music info opens Android's screen for it). `RideCoreMediaListener` is the service that access is given to; it does nothing itself. Without access, play, pause and skip are still sent, as a headset's media buttons are. `RideCoreStatus.java` reports what the dash's corners show: a SIM and its signal level, Wi-Fi, offline or airplane mode, and a connected headset (Bluetooth or wired). It reads the signal's level only, not the network type, so it needs no permission (the type would need `READ_PHONE_STATE`).
 - **Manifest additions:** a second intent filter on `MainActivity` (HOME, DEFAULT), so RIDECORE can be the home app; a `<queries>` entry for launcher activities, so Android 11 and later let it list the phone's apps; and the `RideCoreMediaListener` service.
 - **TrailCompass's native code** (`AppUpdaterPlugin`, `DownloadsPlugin`, `MapFilesPlugin`, `RideLocationPlugin` and the services behind them) is described in [TrailCompass's DEVELOPMENT.md](https://github.com/praneth2580/TrailCompass/blob/main/DEVELOPMENT.md#android-builds).
 - **Trying the launcher.** On the phone: Settings (pull down from the dash) → Home app → RIDECORE. To give the home screen back, use Settings → Phone settings, or from a computer run `adb shell am start -a android.settings.HOME_SETTINGS`.
@@ -184,7 +185,7 @@ TrailCompass's map theme colours the basemap, routes and markers. RIDECORE's col
 
 ## Testing
 
-- **Unit tests:** `npm test`. RIDECORE's sit next to its code (`src/ridecore/*.test.ts`, `ridecore/vite-plugin.test.ts`). They cover the dash's parts, recent places, the turns list, music, radio and weather, the zoom by speed, the map colours, the stylesheet and the Vite plugin. TrailCompass's tests run too and keep testing the engine.
+- **Unit tests:** `npm test`. RIDECORE's sit next to its code (`src/ridecore/*.test.ts`, `ridecore/vite-plugin.test.ts`). They cover the dash's parts, recent places, the turns list, the turn glow, the phone's status, music, radio and weather, the zoom by speed, the map colours, the stylesheet and the Vite plugin. TrailCompass's tests run too and keep testing the engine.
 - **Before a release:** `npm run lint`, `npm run build` and `npm test`.
 - **On a phone, check:**
   - The first start asks for the layout, and the screen holds it either way up.
@@ -192,7 +193,9 @@ TrailCompass's map theme colours the basemap, routes and markers. RIDECORE's col
   - With RIDECORE as the home app: Home returns to the dash, and Back never leaves it.
   - Swiping up lists the phone's apps, and they open and pin.
   - The dash comes back after 30 s alone, and when a turn is near.
-  - Voice prompts come through a headset.
+  - Voice prompts come through a headset, and the headset shows in the dash's corner.
+  - The corners follow the signal: SIM bars, Wi-Fi, airplane mode, no connection.
+  - A turn coming up lights the screen's edge on its side.
   - The Music screen follows a music app, with and without notification access. A radio station plays, and starting it pauses the phone's music.
   - A ride keeps recording with the screen off.
   - The screen stays on.

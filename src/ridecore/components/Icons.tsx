@@ -302,3 +302,62 @@ export const GlowIcon = () => (
     <path d="m13.5 9.5-3 2.5 3 2.5" />
   </Icon>
 );
+
+/** A SIM's signal: four rising bars, lit up to the level; all dim when unknown. */
+export const SignalIcon = ({ level }: { level: number | null }) => (
+  <svg viewBox="0 0 24 24" width={22} height={22} aria-hidden className="rc-signal">
+    {[0, 1, 2, 3].map((bar) => (
+      <rect
+        key={bar}
+        x={3 + bar * 5}
+        y={18 - (bar + 1) * 3.6}
+        width="3.4"
+        height={(bar + 1) * 3.6 + 2}
+        rx="1"
+        fill="currentColor"
+        opacity={level == null ? 0.55 : bar < level ? 1 : 0.25}
+      />
+    ))}
+  </svg>
+);
+
+export const WifiIcon = () => (
+  <Icon>
+    <path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.6 16a5 5 0 0 1 6.8 0" />
+    <circle cx="12" cy="19.3" r="1.3" fill="currentColor" />
+  </Icon>
+);
+
+export const AirplaneIcon = () => (
+  <Icon>
+    <path d="M10.5 20.5 12 18l1.5 2.5M12 3.5c.9 0 1.5.9 1.5 2V10l7 4v2l-7-2v4h-3v-4l-7 2v-2l7-4V5.5c0-1.1.6-2 1.5-2Z" />
+  </Icon>
+);
+
+/** No connection at all. */
+export const NoNetworkIcon = () => (
+  <Icon>
+    <path d="M7 18h10a4 4 0 0 0 1.2-7.8A6 6 0 0 0 7.3 8.6" />
+    <path d="M5.4 10.6A3.8 3.8 0 0 0 7 18" />
+    <path d="m3.5 3.5 17 17" />
+  </Icon>
+);
+
+/** A headset: a helmet's intercom or earphones, to hear navigation in. */
+export const HeadsetIcon = () => (
+  <Icon>
+    <path d="M4 15v-3a8 8 0 0 1 16 0v3" />
+    <rect x="3" y="14" width="4.5" height="6.5" rx="1.8" />
+    <rect x="16.5" y="14" width="4.5" height="6.5" rx="1.8" />
+  </Icon>
+);
+
+/** The phone's battery, filled to its charge, a bolt while charging. */
+export const BatteryLevelIcon = ({ level, charging }: { level: number; charging: boolean }) => (
+  <svg viewBox="0 0 24 24" width={22} height={22} aria-hidden fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
+    <rect x="2.5" y="7" width="17" height="10" rx="2.4" />
+    <path d="M21.5 10.5v3" strokeLinecap="round" />
+    <rect x="4.6" y="9.1" width={Math.max(0.8, 12.8 * Math.min(1, Math.max(0, level)))} height="5.8" rx="1.1" fill="currentColor" stroke="none" />
+    {charging ? <path d="m11.8 8.2-2.6 4.3h3.4l-2.4 3.3" stroke="#000" strokeWidth="1.6" strokeLinecap="round" /> : null}
+  </svg>
+);

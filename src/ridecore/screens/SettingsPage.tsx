@@ -21,6 +21,7 @@ import {
   GearIcon,
   GlowIcon,
   GpsIcon,
+  HeadsetIcon,
   HomeIcon,
   MapIcon,
   MusicIcon,
@@ -28,6 +29,7 @@ import {
   RecordIcon,
   ScreenOnIcon,
   SearchIcon,
+  SignalIcon,
   SunIcon,
   VoiceIcon,
   ZoomIcon,
@@ -93,13 +95,16 @@ export function SettingsPage({ layout, onLayout, keepOn, onKeepOn, voiceOn, onVo
         />
       </div>
 
-      <h3 className="rc-section">Top line</h3>
+      {/* The top line's, then the phone's state: in the dash's corners, else the top line. */}
+      <h3 className="rc-section">Status</h3>
       <div className="rc-keys">
         {part('clock', 'Clock', <ClockIcon />)}
         {part('heading', 'Heading', <CompassIcon />)}
-        {part('gps', 'GPS', <GpsIcon />)}
-        {part('battery', 'Battery', <BatteryIcon />)}
         {part('topWeather', 'Weather', <SunIcon />)}
+        {part('network', 'Network', <SignalIcon level={3} />)}
+        {part('gps', 'GPS', <GpsIcon />)}
+        {part('headset', 'Headset', <HeadsetIcon />)}
+        {part('battery', 'Battery', <BatteryIcon />)}
       </div>
 
       <h3 className="rc-section">Riding</h3>

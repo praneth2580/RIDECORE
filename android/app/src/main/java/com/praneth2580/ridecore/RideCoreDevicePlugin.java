@@ -25,8 +25,8 @@ import java.util.List;
 /**
  * RIDECORE on a phone kept for it alone: the screen layout the rider picked, held
  * whichever way the phone is turned, and RIDECORE as the phone's home screen, opening
- * the phone's other apps and going back to the dash when Home is pressed, and the music
- * the phone plays (RideCoreMedia). Web side: src/ridecore/device.ts. Registered in
+ * the phone's other apps and going back to the dash when Home is pressed, the music the
+ * phone plays (RideCoreMedia), and its signal and headset for the dash (RideCoreStatus). Web side: src/ridecore/device.ts. Registered in
  * MainActivity.
  */
 @CapacitorPlugin(name = "RideCoreDevice")
@@ -38,6 +38,7 @@ public class RideCoreDevicePlugin extends Plugin {
     private static final int ICON_DP = 56;
 
     private RideCoreMedia media;
+    private RideCoreStatus status;
 
     @Override
     public void load() {
@@ -45,6 +46,14 @@ public class RideCoreDevicePlugin extends Plugin {
         apply(prefs().getString(LAYOUT, null));
         media = new RideCoreMedia(getContext(), snapshot -> notifyListeners("media", snapshot));
         media.start();
+        status = new RideCoreStatus(getContext(), snapshot -> notifyListeners("status", snapshot));
+        status.start();
+    }
+
+    /** SIM and signal, Wi-Fi or offline, airplane mode, a headset connected. */
+    @PluginMethod
+    public void getStatus(PluginCall call) {
+        call.resolve(status.snapshot());
     }
 
     /** Back from Android's settings, access may have just been given. */
@@ -59,6 +68,7 @@ public class RideCoreDevicePlugin extends Plugin {
     @Override
     protected void handleOnDestroy() {
         if (media != null) media.stop();
+        if (status != null) status.stop();
         super.handleOnDestroy();
     }
 

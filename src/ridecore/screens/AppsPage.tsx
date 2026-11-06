@@ -10,6 +10,8 @@ interface AppsPageProps {
   active: boolean;
   /** Something to tell the rider: an app pinned, or one that wouldn't open. */
   onNote: (message: string, tone: 'info' | 'error') => void;
+  /** Back down to the dash, from the handle at the top. */
+  onBack: () => void;
 }
 
 const PINNED_KEY = 'ridecore.pinnedApps';
@@ -27,7 +29,7 @@ function loadPinned(): string[] {
  * The phone's other apps, as a home screen's app drawer: swipe up from the dash, tap
  * one to open it. Holding one pins it to the top, for music, calls and the like.
  */
-export function AppsPage({ active, onNote }: AppsPageProps) {
+export function AppsPage({ active, onNote, onBack }: AppsPageProps) {
   const [apps, setApps] = useState<PhoneApp[] | null>(null);
   const [supported, setSupported] = useState(true);
   const [pinned, setPinned] = useState(loadPinned);
@@ -82,7 +84,7 @@ export function AppsPage({ active, onNote }: AppsPageProps) {
   const pinnedApps = (apps ?? []).filter((app) => pinned.includes(app.packageName));
 
   return (
-    <Page title="Apps" fill>
+    <Page title="Apps" fill handle={{ edge: 'top', onBack }}>
       {!supported ? (
         <Empty icon={<GridIcon />} title="On the phone only" text="As the phone's home screen, RIDECORE lists its apps here to open them." />
       ) : !apps ? (

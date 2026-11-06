@@ -19,9 +19,13 @@ export interface DashShows {
   clock: boolean;
   /** The top line's compass heading. */
   heading: boolean;
-  /** The top line's GPS light. */
+  /** The SIM's signal, Wi-Fi or offline: in a corner of the dash, else the top line. */
+  network: boolean;
+  /** GPS: in a corner of the dash, else the top line. */
   gps: boolean;
-  /** The top line's battery. */
+  /** A connected headset: in a corner of the dash, else the top line. */
+  headset: boolean;
+  /** The battery: in a corner of the dash, else the top line. */
   battery: boolean;
   /** The top line's temperature, with an umbrella when rain is likely. */
   topWeather: boolean;
@@ -38,7 +42,9 @@ export const DASH_SHOWS_ALL: DashShows = {
   weather: true,
   clock: true,
   heading: true,
+  network: true,
   gps: true,
+  headset: true,
   battery: true,
   topWeather: true,
   turnGlow: true,

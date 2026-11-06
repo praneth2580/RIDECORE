@@ -485,27 +485,18 @@ section[id] {
   padding: 0;
   list-style: none;
   grid-template-columns: 1fr;
-  grid-template-areas: "settings" "dash" "apps" "music" "go" "rec" "rides";
+  grid-template-areas: "settings" "dash" "apps" "music" "go" "rides";
 }
 
+/* A plus round the dash, as on the phone: settings above, apps below, music left, where
+   to and rides right. */
 @media (min-width: 620px) {
   .screen-map {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     grid-template-areas:
-      ". settings ."
-      "music dash go"
-      ". apps rec"
-      ". . rides";
-  }
-}
-
-@media (min-width: 1040px) {
-  .screen-map {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    grid-template-areas:
-      ". settings . . ."
-      "music dash go rec rides"
-      ". apps . . .";
+      ". settings . ."
+      "music dash go rides"
+      ". apps . .";
   }
 }
 

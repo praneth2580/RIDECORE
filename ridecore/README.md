@@ -49,9 +49,12 @@ of switches with explanations; actions are round keys with a word under them; tr
 rides are cards showing their shape. Grids fill the screen either way up: two keys across
 in portrait, four or more in landscape, where keys put the icon beside the word.
 
-Left and right, from the dash:
+The screens sit round the dash like a plus, each where a rider would reach for it, so
+everything is a swipe away (Rides two): music to the left; where to, ahead, to the right,
+with rides beyond it; settings pulled down from above and the apps pulled up from below,
+as on Android. Left and right, from the dash:
 
-0. Music, a swipe right of the dash (`screens/MusicPage.tsx`): what plays, from any of
+0. Music, left of the dash, a swipe right away (`screens/MusicPage.tsx`): what plays, from any of
    the phone's music apps or RIDECORE's own radio, with big keys to play, pause, go back
    and skip. Then radio: favourite stations as keys (star a station; hold its key to
    unstar it), then the country's most played stations. One plays at a time: starting the
@@ -61,9 +64,13 @@ Left and right, from the dash:
    the screen and fades into the black at its edges (in landscape it runs behind the two
    dials, fading out under them). It's a display that always follows the rider and zooms
    with speed; swipes go through it, and a tap gives it the whole screen to look around
-   (one close chip). "Arrived" is tapped to finish. Settings → On the dash and Top line switch each
-   part on or off (speed, map, trip, Where to, music, weather; the status line's clock,
-   heading, GPS, battery and weather; `src/ridecore/dash.ts`); what's off gives its room
+   (one close chip). "Arrived" is tapped to finish. The phone's state sits in the room the
+   round dials leave in the corners (`components/StatusCorners.tsx`): signal bars with a
+   SIM (or Wi-Fi, airplane mode, "Offline"), GPS, a connected headset, the battery; a
+   word only when something's wrong. Away from the dash the top line carries them, as
+   icons. Settings → On the dash and Status switch each part on or off (speed, map, trip,
+   Where to, music, weather; clock, heading, weather, network, GPS, headset, battery;
+   `src/ridecore/dash.ts`); what's off gives its room
    to the rest. With the map
    off the next turn still shows, under the speed. The readout under the map (the right
    dial in landscape) shows the most useful thing: the trip, else the ride, else what
@@ -76,14 +83,16 @@ Left and right, from the dash:
    inside. While a trip is under way this is the trip instead (`screens/TripPage.tsx`):
    time to go, distance left and arrival as big as the dash's numbers, two round keys
    (voice; End, two taps, no dialog) and the next 8 turns, beside them in landscape.
-3. The ride recorder (`screens/RecordPage.tsx`): one big face; tap to record, pause and
-   carry on. Save keeps the ride.
-4. Rides: every ride recorded, as cards with its shape; tap one to see it on the map.
+3. Rides (`screens/RidesPage.tsx`), beyond Where to: the recorder's big face
+   (`components/Recorder.tsx`); tap to record, pause and carry on, and Save keeps the
+   ride. Under it, every ride recorded, as cards with its shape; tap one to see it on
+   the map.
 
 Up and down, on the dash only, as on a phone's home screen: swipe down for settings,
 swipe up for the phone's apps (`screens/AppsPage.tsx`). Tap an app to open it; hold one
-to pin it to the top. At the end of either list the next swipe carries on to the dash,
-and leaving the column sideways closes it.
+to pin it to the top. The way back is the way in: each has a Dash handle on its edge
+toward the dash (`Page`'s `handle`), outside its list, to swipe or tap however far down
+the list is, and sideways does nothing there (the outer pager is held on the dash).
 
 As a launcher: Home always brings the dash back (a route being chosen stays chosen),
 Back closes what's open and then goes back to the dash, and nothing is behind it. Left
@@ -142,6 +151,10 @@ RIDECORE is made for a phone kept for it alone, as that phone's home screen.
   does; tap one to open it, hold one to pin it to the top. `RideCoreDevicePlugin` lists
   them (`listApps`, icons as PNG data URLs), opens them (`openApp`), and tells the web
   side when Home is pressed (the `home` event). In a browser there are none to list.
+- **Signal and headset.** `RideCoreDevicePlugin` reports the SIM, its signal bars, Wi-Fi
+  or offline, airplane mode and a connected headset (`getStatus`, the `status` event;
+  `RideCoreStatus.java`). It needs no permission, so the network type (4G, 5G) isn't
+  shown: that would take the "make and manage phone calls" permission.
 - **Screen on.** On all the time unless Settings → Screen on is set to Navigating.
 - **The way out.** Settings → Phone settings opens the phone's own settings (Wi-Fi,
   Bluetooth, and Apps → Default apps → Home app to give the home screen back).

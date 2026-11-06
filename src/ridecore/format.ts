@@ -1,4 +1,11 @@
-import { isFixStale, type GpsFix } from './engine';
+import { gpsWarning, isFixStale, type GpsFix } from './engine';
+
+/** GPS as the dash shows it: good, weak accuracy, lost (stale), or no fix yet. */
+export type GpsState = 'ok' | 'weak' | 'lost' | 'none';
+
+export function gpsState(fix: GpsFix | null, now: number): GpsState {
+  return !fix ? 'none' : isFixStale(fix, now) ? 'lost' : (gpsWarning(fix, now) ?? 'ok');
+}
 
 /** Speed in km/h, or null with no fix, a stale fix, or no speed in it. */
 export function speedKmh(fix: GpsFix | null, now: number): number | null {

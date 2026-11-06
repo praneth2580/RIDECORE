@@ -11,6 +11,12 @@ interface PageProps {
   top?: ReactNode;
   /** Exactly one screen, what it holds scrolling inside it instead of on to the next page. */
   fill?: boolean;
+  /**
+   * A screen pulled over the dash (settings from above, the apps from below): a handle
+   * on the edge toward the dash. It isn't part of the list, so a swipe on it always goes
+   * back, however long the list is; a tap does too.
+   */
+  handle?: { edge: 'top' | 'bottom'; onBack: () => void };
   children: ReactNode;
 }
 
@@ -18,15 +24,23 @@ interface PageProps {
  * One screen of the device after the dash: its name small and centred at the top, as a
  * watch's or a car's screens have it, then what it holds, using the whole width.
  */
-export function Page({ title, sub, subTone, top, fill, children }: PageProps) {
+export function Page({ title, sub, subTone, top, fill, handle, children }: PageProps) {
+  const grip = handle ? (
+    <button type="button" className="rc-handle" data-edge={handle.edge} onClick={handle.onBack}>
+      <i aria-hidden />
+      <span>Dash</span>
+    </button>
+  ) : null;
   return (
-    <section className="rc-page" data-fill={fill ? 'true' : undefined} aria-label={title}>
+    <section className="rc-page" data-fill={fill ? 'true' : undefined} data-handle={handle?.edge} aria-label={title}>
+      {handle?.edge === 'top' ? grip : null}
       <header className="rc-page-head">
         <h2>{title}</h2>
         {sub ? <p data-tone={subTone}>{sub}</p> : null}
         {top}
       </header>
       <div className="rc-page-body">{children}</div>
+      {handle?.edge === 'bottom' ? grip : null}
     </section>
   );
 }

@@ -45,6 +45,38 @@ export interface PhoneMedia {
 
 export type MediaAction = 'play' | 'pause' | 'toggle' | 'next' | 'previous';
 
+/** The phone's connection, as the dash shows it. */
+export interface PhoneNetwork {
+  airplane: boolean;
+  /** A SIM is in. */
+  sim: boolean;
+  /** The SIM's signal, 0 (none) to 4 bars; left out where the phone won't say. */
+  level?: number;
+  /** The mobile network's name. */
+  operator?: string;
+  /** On Wi-Fi, or on mobile data, right now. */
+  wifi: boolean;
+  mobileData: boolean;
+  /** The internet actually reachable. */
+  online: boolean;
+}
+
+/** A headset to hear navigation in: a helmet's Bluetooth intercom, or wired earphones. */
+export interface PhoneHeadset {
+  connected: boolean;
+  kind?: 'bluetooth' | 'wired';
+  name?: string;
+}
+
+export interface PhoneStatus {
+  /** False in a browser, which can't tell. */
+  supported: boolean;
+  network?: PhoneNetwork;
+  headset?: PhoneHeadset;
+}
+
+export const NO_PHONE_STATUS: PhoneStatus = { supported: false };
+
 interface RideCoreDevicePlugin {
   /** Undefined until the rider has picked one. */
   getLayout(): Promise<{ layout?: Layout }>;
@@ -61,8 +93,12 @@ interface RideCoreDevicePlugin {
   mediaControl(options: { action: MediaAction }): Promise<void>;
   /** Android's notification access screen, to let RIDECORE see what plays. */
   openMediaAccess(): Promise<void>;
+  /** SIM and signal, Wi-Fi or offline, airplane mode, a headset. */
+  getStatus(): Promise<PhoneStatus>;
   /** Home pressed while RIDECORE is the home screen. */
   addListener(eventName: 'home', listener: () => void): Promise<PluginListenerHandle>;
+  /** The connection or the headset changed. The signal level isn't pushed: read it again. */
+  addListener(eventName: 'status', listener: (status: PhoneStatus) => void): Promise<PluginListenerHandle>;
   /** What plays changed: another song, paused, another app. */
   addListener(eventName: 'media', listener: (media: PhoneMedia) => void): Promise<PluginListenerHandle>;
 }
@@ -103,10 +139,16 @@ class RideCoreDeviceWeb extends WebPlugin implements RideCoreDevicePlugin {
   async mediaControl(): Promise<void> {}
 
   async openMediaAccess(): Promise<void> {}
+
+  async getStatus(): Promise<PhoneStatus> {
+    return NO_PHONE_STATUS;
+  }
 }
 
+// One instance, made now: given a factory, Capacitor can make two when calls come at
+// once on start-up, and a listener added to the first never hears events sent to the second.
 export const device = registerPlugin<RideCoreDevicePlugin>('RideCoreDevice', {
-  web: () => new RideCoreDeviceWeb(),
+  web: new RideCoreDeviceWeb(),
 });
 
 const KEEP_ON_KEY = 'ridecore.keepScreenOn';

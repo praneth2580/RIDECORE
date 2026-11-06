@@ -170,6 +170,49 @@
   scrollbar-width: none;
 }
 
+/* The handle of a screen pulled over the dash, on its edge toward the dash: a grip bar
+   and the word. Outside the list, so a swipe on it always goes back; a tap does too. */
+.rc-handle {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  min-height: 3.2rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--rc-muted);
+  font: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.rc-handle[data-edge='top'] {
+  flex-direction: column-reverse;
+  margin-top: -0.6rem;
+}
+
+.rc-handle i {
+  width: 3rem;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--rc-raised);
+}
+
+.rc-handle:active i {
+  background: var(--rc-lime);
+}
+
+/* Settings' handle sits on the screen's bottom edge, under its list. */
+.rc-page[data-handle='bottom'] {
+  padding-bottom: calc(0.2rem + var(--rc-bottom));
+}
+
 /* Where you are: dots along the bottom for the screens side by side, down the right edge
    for the dash's column. */
 .rc-pager-dots {
@@ -276,6 +319,7 @@
 /* Portrait: the dial on top, the road across the screen under it, the trip below.
    Whatever the rider switched off gives its room to the rest (Settings → Dash). */
 .rc-cluster {
+  position: relative;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -283,6 +327,7 @@
 }
 
 .rc-speed {
+  position: relative;
   flex: none;
   display: grid;
   place-items: center;
@@ -339,12 +384,13 @@
     column-gap: 1.2rem;
   }
 
+  /* A dial switched off: its corners' marks keep a little room from the turn. */
   .rc-cluster[data-speed='off'] {
-    --rc-room-left: var(--rc-edge-left);
+    --rc-room-left: calc(var(--rc-edge-left) + 7rem);
   }
 
   .rc-cluster[data-trip='off'] {
-    --rc-room-right: var(--rc-edge-right);
+    --rc-room-right: calc(var(--rc-edge-right) + 7rem);
   }
 
   .rc-cluster[data-map='off'] {
@@ -435,18 +481,6 @@
   border-radius: 50%;
   background: var(--rc-muted);
   vertical-align: 1px;
-}
-
-.rc-statusline-gps[data-state='ok'] i {
-  background: var(--rc-green);
-}
-
-.rc-statusline-gps[data-state='weak'] i {
-  background: var(--rc-lime);
-}
-
-.rc-statusline-gps[data-state='lost'] i {
-  background: var(--rc-red);
 }
 
 .rc-statusline-rec {
@@ -544,6 +578,131 @@
   color: var(--rc-muted);
   font-size: 6cqi;
   letter-spacing: 0.04em;
+}
+
+/* ── The phone's state, round the dials ───────────────────── */
+
+/* A round dial on a square screen leaves its corners empty: the phone's state goes
+   there, as a car's warning lights sit round its gauges. Portrait: the speedometer's
+   corners. Landscape: the dash's, above and below the two dials. Never in a tap's way. */
+.rc-corners {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.rc-corners[data-place='speed'] {
+  inset: 0 var(--rc-edge-right) 0 var(--rc-edge-left);
+}
+
+.rc-corners[data-place='cluster'] {
+  display: none;
+  inset: 0 var(--rc-edge-right) 0 var(--rc-edge-left);
+}
+
+@media (orientation: landscape) {
+  .rc-corners[data-place='speed'] {
+    display: none;
+  }
+
+  .rc-corners[data-place='cluster'] {
+    display: block;
+  }
+}
+
+.rc-corners [data-corner] {
+  position: absolute;
+  display: flex;
+  max-width: 48%;
+}
+
+/* Portrait: beside the speedometer, a corner holds about six letters before the dial's
+   edge; a longer headset name ends in "…". */
+.rc-corners[data-place='speed'] [data-corner] {
+  max-width: 6rem;
+}
+
+.rc-corners [data-corner='tl'] {
+  top: 0.15rem;
+  left: 0;
+}
+
+.rc-corners [data-corner='tr'] {
+  top: 0.15rem;
+  right: 0;
+}
+
+.rc-corners [data-corner='bl'] {
+  bottom: 0.15rem;
+  left: 0;
+}
+
+.rc-corners [data-corner='br'] {
+  bottom: 0.15rem;
+  right: 0;
+}
+
+/* A mark: an icon, and a word where it helps. Quiet grey while all is well; colour only
+   when something needs a look. */
+.rc-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  color: var(--rc-copy);
+  font-size: 0.82rem;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-mark svg {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.rc-mark > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rc-mark[data-warn] {
+  color: #ff7a70;
+}
+
+.rc-mark[data-mark='gps'][data-state='ok'] svg {
+  color: var(--rc-green);
+}
+
+.rc-mark[data-mark='gps'][data-state='weak'] {
+  color: var(--rc-lime);
+}
+
+.rc-mark[data-mark='gps'][data-state='lost'] {
+  color: #ff7a70;
+}
+
+.rc-mark[data-mark='gps'][data-state='none'] {
+  color: var(--rc-muted);
+}
+
+.rc-mark[data-mark='battery'][data-charging] svg {
+  color: var(--rc-lime);
+}
+
+.rc-mark[data-mark='headset'] svg {
+  color: var(--rc-lime);
+}
+
+/* In the top line, away from the dash: smaller, tighter. */
+.rc-statusline .rc-mark {
+  gap: 0.2rem;
+  font-size: inherit;
+}
+
+.rc-statusline .rc-mark svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* ── The map, with the next turn over it ──────────────────── */
@@ -2191,6 +2350,49 @@ button.rc-trip {
   }
 
   .rc-music-radio {
+    height: 100%;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-width: none;
+  }
+}
+
+/* ── Rides: the recorder, and the rides under it ─────────── */
+
+/* Portrait: the face, then the past rides, the first of them peeking out under it.
+   Landscape: side by side, the rides scrolling on their own. */
+.rc-rides {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 1.4rem;
+}
+
+.rc-rides .rc-rec-face {
+  width: min(62vw, 36dvh);
+}
+
+.rc-rides-past .rc-section:first-child {
+  margin-top: 0.3rem;
+}
+
+@media (orientation: landscape) {
+  .rc-rides {
+    grid-template-columns: auto minmax(0, 1fr);
+    height: 100%;
+    gap: 1.8rem;
+  }
+
+  .rc-rides .rc-rec {
+    align-self: center;
+    gap: 1.4rem;
+  }
+
+  .rc-rides .rc-rec-face {
+    width: min(28vw, calc(100dvh - 9rem));
+  }
+
+  .rc-rides-past {
     height: 100%;
     overflow-y: auto;
     overscroll-behavior-y: contain;

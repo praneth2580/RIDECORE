@@ -27,7 +27,7 @@ RIDECORE turns a phone you keep on the handlebar into a riding device. It become
 
 ## What it does
 
-- **A dash you read at a glance.** Speed in big numbers, the live map with the next turn over it, and the time to go, distance left and arrival beside it. With no trip under way, the same spot shows the ride being recorded, what's playing (tap to pause) or the weather. The top line has the time, heading, GPS, battery and temperature, with an umbrella when rain is likely in the next three hours. Switch off any part you don't want (Settings → On the dash and Top line), and the rest takes its room.
+- **A dash you read at a glance.** Speed in big numbers, the live map with the next turn over it, and the time to go, distance left and arrival beside it. With no trip under way, the same spot shows the ride being recorded, what's playing (tap to pause) or the weather. The top line has the time, heading and temperature, with an umbrella when rain is likely in the next three hours. The phone's state sits in the room the round dials leave in the corners, the way a car's warning lights sit round its gauges: signal bars if there's a SIM (or Wi-Fi, or "Offline"), GPS, a connected helmet headset, and the battery. A word only appears when something's wrong, like "No signal" or "GPS lost". Switch off any part you don't want (Settings → On the dash and Status), and the rest takes its room.
 - **A map that rides with you.** It follows you and zooms out as you speed up, back in as you slow down. Settings → Speed zoom picks how far: ×0.5, ×1 or ×1.5. It's dark, in the dash's colours, with your route in green. Tap it to look around.
 - **One tap to go again.** Typing on a mount is slow, so your last six places come first on Where to, a tap each. Hold one to forget it. Search is there for somewhere new.
 - **Routes for bikes.** Fastest, Shortest or Less traffic, with up to three routes to compare before you start. Expressways closed to two-wheelers stay off unless you allow them. Both choices are kept for the next trip.
@@ -41,24 +41,25 @@ RIDECORE turns a phone you keep on the handlebar into a riding device. It become
 
 ## Swipe it like a watch
 
-Every screen fills the phone. Swipe between them: each snaps into place, and dots show where you are. The dash is home.
+Every screen fills the phone. Swipe between them: each snaps into place, and dots show where you are. The dash is home, with a screen on each side of it, where you'd reach for it: everything is one swipe away, Rides two.
 
 ```text
-              Settings                        pull down from the dash
-                 │
-   Music ──── Dash ── Where to ── Ride recorder ── Rides
-                 │
-               Apps                           swipe up from the dash
+                 Settings              pull down from the dash
+                    │
+   Music  ────    Dash    ────  Where to  ────  Rides
+                    │
+                  Apps                 swipe up from the dash
 ```
+
+The way back is always the way you came. Settings and Apps have nothing beside them, so sideways does nothing there; swipe (or tap) the **Dash** handle on their edge to go back, however far down the list you are.
 
 | Screen | What's on it |
 | --- | --- |
 | **Dash** | Speed, the map with the next turn over it, and the trip. "Where to?" when you're not going anywhere. |
 | **Music** | What's playing, with keys to play, pause, go back and skip. Then radio: your starred stations, then the most played. |
 | **Where to** | Your last places as keys, then search. While a trip is under way, it's the trip instead: time to go, distance left, arrival, voice on or off, End (tap twice) and the next eight turns. |
-| **Ride recorder** | One big face to record, pause and carry on, and **Save ride**. |
-| **Rides** | Every ride you've recorded, drawn as its shape. Tap one to see it on the map. |
-| **Settings** | Big keys, lit when on: what the dash and the top line show, speed zoom, voice, turn glow, fuel and food on the map, auto-record, screen on, how the phone is mounted, the home app, music info, and the way out to the phone's own settings. |
+| **Rides** | The recorder's big face: tap it to record, pause and carry on, then **Save ride**. Under it, every ride you've recorded, drawn as its shape. Tap one to see it on the map. |
+| **Settings** | Big keys, lit when on: what the dash, the top line and the corners show, speed zoom, voice, turn glow, fuel and food on the map, auto-record, screen on, how the phone is mounted, the home app, music info, and the way out to the phone's own settings. |
 | **Apps** | The phone's other apps. Tap to open, hold to pin. |
 
 Choosing a route is done stopped. Pick a place and the map takes the whole screen with the routes on offer and **Start**. Scroll down for the route type and expressways.

@@ -20,8 +20,10 @@ import {
 import { device, loadKeepScreenOn, saveKeepScreenOn, type Layout } from '../device';
 import { loadDashShows, saveDashShows, type DashShows } from '../dash';
 import { followMedia, togglePlay, useNowPlaying } from '../media';
+import { networkMark, useMediaQuery, usePhoneStatus } from '../status';
 import { useWeather } from '../weather';
 import { MapZone, type ZoneMode } from '../components/MapZone';
+import { StatusCorners } from '../components/StatusCorners';
 import { TurnGlowEdges } from '../components/TurnGlowEdges';
 import { turnGlow } from '../glow';
 import { Page } from '../components/Page';
@@ -30,11 +32,10 @@ import { RoutePanel } from '../components/RoutePanel';
 import { SpeedDial } from '../components/SpeedDial';
 import { StatusLine } from '../components/StatusLine';
 import { TripReadout } from '../components/TripReadout';
-import { speedKmh } from '../format';
+import { gpsState, speedKmh } from '../format';
 import { ChooseLayout } from '../screens/ChooseLayout';
 import { GoPage, type GoPageHandle } from '../screens/GoPage';
 import { MusicPage } from '../screens/MusicPage';
-import { RecordPage } from '../screens/RecordPage';
 import { AppsPage } from '../screens/AppsPage';
 import { RidesPage } from '../screens/RidesPage';
 import { SettingsPage } from '../screens/SettingsPage';
@@ -43,14 +44,15 @@ import { useBattery } from './useBattery';
 import { useRideCore, type Toast } from './useRideCore';
 
 /**
- * Screens side by side, swiped left and right: music left of the dash (a swipe right
- * away), then the dash, where to (or the trip), the ride recorder, past rides. Rides is
- * the one list without end, so it goes last.
+ * The screens sit round the dash like a plus, each where a rider would reach for it:
+ * music to the left; where to (or the trip) to the right, ahead, with rides beyond it;
+ * settings pulled down from above, the phone's apps pulled up from below. Everything is
+ * a swipe away, rides two. Side by side, swiped left and right:
  */
 const MUSIC = 0;
 const DASH = 1;
 const GO = 2;
-const RIDES = 4;
+const RIDES = 3;
 /**
  * The dash's own column, swiped up and down as a phone's home screen is: settings pulled
  * down from above (row 0), the phone's apps swiped up from below.
@@ -69,7 +71,7 @@ const PINS_DEFAULT_KEY = 'ridecore.pinsDefault';
 /**
  * RIDECORE is the phone's home screen, worked like a watch: screens to swipe through
  * instead of buttons. The dash (speed, the road ahead, the trip) is home. Left of it,
- * music; right of it: where to go (or the trip under way), the ride recorder, past rides. Up and down
+ * music; right of it: where to go (or the trip under way), then rides. Up and down
  * from it: the phone's apps and settings. What's on a screen is what you tap; Home, or
  * leaving it alone, brings the dash back. Choosing a route, or looking around the map,
  * gives the map the whole screen.
@@ -102,12 +104,17 @@ export function App() {
   const { nav, fix } = core;
   const media = useNowPlaying();
   const weather = useWeather(fix, shows.weather || shows.topWeather);
+  const landscape = useMediaQuery('(orientation: landscape)');
+  // Read again now and then while the dash shows, for the signal bars.
+  const phoneStatus = usePhoneStatus(page === DASH && row === DASH_ROW);
   const navMode = nav.status === 'navigating' || nav.status === 'rerouting';
   const choosingRoute = nav.status === 'planning' || nav.status === 'choosing' || nav.status === 'error';
   const tripUnderway = navMode || nav.status === 'paused' || nav.status === 'arrived';
   const mode: ZoneMode = choosingRoute ? 'route' : exploring ? 'map' : 'dash';
-  // The map with the screen holds the dash; a search holds where-to.
-  const hold = mode !== 'dash' ? DASH : searching ? GO : null;
+  // The map with the screen holds the dash; a search holds where-to. Settings and the
+  // apps are above and below the dash only: while one is open, sideways goes nowhere,
+  // and the way back is the way in.
+  const hold = mode !== 'dash' ? DASH : searching ? GO : row !== DASH_ROW ? DASH : null;
   // The phone is kept for riding: the screen stays on unless the rider turned that off.
   useKeepAwake(keepOn || navMode);
 
@@ -295,9 +302,32 @@ export function App() {
   }
 
   const dash = mode === 'dash';
+  // The dash in view: the phone's state goes in the room round the dials (the
+  // speedometer's corners in portrait, which need the speedometer; the dash's corners in
+  // landscape). Anywhere else, the top line carries it.
+  const onDash = dash && page === DASH && row === DASH_ROW;
+  const cornersShown = onDash && (shows.speed || landscape);
+  const marks = {
+    network: networkMark(phoneStatus.network),
+    gps: gpsState(fix, core.now),
+    battery,
+    headset: phoneStatus.headset,
+    shows,
+  };
   return (
     <div className="rc-device" data-status={nav.status} data-mode={dash ? undefined : mode}>
-      {dash ? <StatusLine core={core} battery={battery} shows={shows} weather={weather} /> : null}
+      {dash ? (
+        <StatusLine
+          core={core}
+          battery={battery}
+          shows={shows}
+          weather={weather}
+          network={marks.network}
+          headset={marks.headset}
+          gps={marks.gps}
+          cornersShown={cornersShown}
+        />
+      ) : null}
 
       <Pager
         ref={pagerRef}
@@ -320,7 +350,7 @@ export function App() {
           onPage={setRow}
           returnAfterMs={RETURN_AFTER_MS}
         >
-          <Page title="Settings" fill>
+          <Page title="Settings" fill handle={{ edge: 'bottom', onBack: showDash }}>
             <SettingsPage
               layout={layout}
               onLayout={chooseLayout}
@@ -343,6 +373,7 @@ export function App() {
               {dash && shows.speed ? (
                 <div className="rc-speed">
                   <SpeedDial speed={speedKmh(fix, core.now)} />
+                  <StatusCorners place="speed" {...marks} />
                 </div>
               ) : null}
               <MapZone
@@ -380,6 +411,7 @@ export function App() {
                   onMediaToggle={() => togglePlay(media)}
                 />
               ) : null}
+              {dash ? <StatusCorners place="cluster" {...marks} /> : null}
               {dash && !shows.speed && !shows.map && !shows.trip ? (
                 <p className="rc-dash-hint">Swipe down to Settings to choose what the dash shows.</p>
               ) : null}
@@ -387,6 +419,7 @@ export function App() {
           </section>
 
           <AppsPage
+            onBack={showDash}
             active={page === DASH && row === APPS_ROW}
             onNote={(message, tone) => setToast({ message, tone })}
           />
@@ -413,9 +446,7 @@ export function App() {
           />
         )}
 
-        <RecordPage core={core} onRun={runRide} />
-
-        <RidesPage active={page === RIDES} onShowRide={showRide} />
+        <RidesPage active={page === RIDES} onShowRide={showRide} core={core} onRun={runRide} />
       </Pager>
 
       <TurnGlowEdges glow={glow} />

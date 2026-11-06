@@ -1,10 +1,13 @@
-import { formatKm, gpsWarning, isFixStale } from '../engine';
+import { formatKm } from '../engine';
 import type { RideCoreState } from '../app/useRideCore';
 import type { Battery } from '../app/useBattery';
 import type { DashShows } from '../dash';
-import { clock, compassPoint, day } from '../format';
+import type { PhoneHeadset } from '../device';
+import { clock, compassPoint, day, type GpsState } from '../format';
+import type { NetworkMark } from '../status';
 import { RAIN_WARN_CHANCE, type Weather } from '../weather';
 import { RainIcon, WeatherIcon } from './Icons';
+import { BatteryMark, GpsMark, HeadsetMark, NetworkMarkView } from './StatusMarks';
 
 interface StatusLineProps {
   core: RideCoreState;
@@ -12,14 +15,21 @@ interface StatusLineProps {
   /** What the rider chose to see. A ride being recorded always shows. */
   shows: DashShows;
   weather: Weather | null;
+  network: NetworkMark | null;
+  headset: PhoneHeadset | undefined;
+  gps: GpsState;
+  /**
+   * The dash in view, with the phone's state in its corners: the top line keeps to the
+   * time, heading, weather and recording. Elsewhere it carries the phone's state too.
+   */
+  cornersShown: boolean;
 }
 
-/** The device's top line: time, date, heading, weather, recording, GPS, battery. Small and quiet. */
-export function StatusLine({ core, battery, shows, weather }: StatusLineProps) {
+/** The device's top line: time, date, heading, weather, recording; away from the dash, the phone's state. */
+export function StatusLine({ core, battery, shows, weather, network, headset, gps, cornersShown }: StatusLineProps) {
   const { fix, compass, ride, now } = core;
   const heading = shows.heading ? (fix?.headingDegrees ?? compass?.headingDegrees ?? null) : null;
-  const gps = !fix ? 'none' : isFixStale(fix, now) ? 'lost' : (gpsWarning(fix, now) ?? 'ok');
-  const power = shows.battery ? battery : null;
+  const phone = !cornersShown;
 
   return (
     <header className="rc-statusline">
@@ -48,17 +58,10 @@ export function StatusLine({ core, battery, shows, weather }: StatusLineProps) {
           <i aria-hidden /> REC {formatKm(ride.distanceMeters)}
         </span>
       ) : null}
-      {shows.gps ? (
-        <span className="rc-statusline-gps" data-state={gps} aria-label={`GPS ${gps}`}>
-          <i aria-hidden /> GPS
-        </span>
-      ) : null}
-      {power ? (
-        <span>
-          {power.charging ? '⚡' : ''}
-          {Math.round(power.level * 100)}%
-        </span>
-      ) : null}
+      {phone && shows.network && network ? <NetworkMarkView mark={network} compact /> : null}
+      {phone && shows.headset ? <HeadsetMark headset={headset} compact /> : null}
+      {phone && shows.gps ? <GpsMark state={gps} compact /> : null}
+      {phone && shows.battery && battery ? <BatteryMark battery={battery} compact /> : null}
     </header>
   );
 }
