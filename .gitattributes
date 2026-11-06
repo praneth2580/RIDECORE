@@ -1,0 +1,12 @@
+# RIDECORE's own docs and website. They started as TrailCompass's, so merging
+# TrailCompass (upstream) would otherwise conflict on every change it makes to
+# them. "ours" keeps RIDECORE's version; set the driver up once per clone:
+#
+#   git config merge.ours.driver true
+#
+# See DEVELOPMENT.md → "Docs, the site and merges".
+/README.md                    merge=ours
+/DEVELOPMENT.md               merge=ours
+/docs/PROJECT_GUIDE.md        merge=ours
+/site/**                      merge=ours
+/scripts/render-og-image.mjs  merge=ours

@@ -1,105 +1,148 @@
 <p align="center">
-  <img src="site/og-image.png" alt="TrailCompass on a phone, navigating a motorcycle route with fuel and food stops" width="100%" />
+  <img src="site/og-image.png" alt="RIDECORE's dash on a phone mounted sideways: speed, the next turn over the map, and the time to go" width="100%" />
 </p>
 
-<h1 align="center">TrailCompass</h1>
+<h1 align="center">RIDECORE</h1>
 
 <p align="center">
-  <strong>Motorcycle navigation that plans your fuel and food stops.</strong><br />
-  Free for Android. Built for Indian roads.
-</p>
-
-<p align="center">
-  <a href="https://praneth2580.github.io/TrailCompass/"><img alt="Latest release" src="https://img.shields.io/github/v/release/praneth2580/TrailCompass?label=latest%20release&color=f0a020" /></a>
-  <img alt="Android 6.0 or newer" src="https://img.shields.io/badge/Android-6.0%2B-3dbea5" />
-  <img alt="Free, no account, no ads" src="https://img.shields.io/badge/free-no%20account%20%C2%B7%20no%20ads-4fcf84" />
+  <strong>Your bike's dash, on a spare phone.</strong><br />
+  Free for Android. Early alpha.
 </p>
 
 <p align="center">
-  <a href="https://praneth2580.github.io/TrailCompass/"><strong>Get TrailCompass for Android</strong></a>
+  <a href="https://praneth2580.github.io/RIDECORE/"><img alt="Latest release" src="https://img.shields.io/github/v/release/praneth2580/RIDECORE?include_prereleases&label=latest%20release&color=dffe45&labelColor=161718" /></a>
+  <img alt="Android 6.0 or newer" src="https://img.shields.io/badge/Android-6.0%2B-61c04f?labelColor=161718" />
+  <img alt="Free, no account, no ads" src="https://img.shields.io/badge/free-no%20account%20%C2%B7%20no%20ads-8e8f94?labelColor=161718" />
+</p>
+
+<p align="center">
+  <a href="https://praneth2580.github.io/RIDECORE/"><strong>Get RIDECORE for Android</strong></a>
   &nbsp;·&nbsp;
-  <a href="https://praneth2580.github.io/TrailCompass/#install">How to install</a>
+  <a href="#set-up-a-riding-phone">Set up a riding phone</a>
 </p>
 
 ---
 
-TrailCompass keeps you on roads bikes are allowed on, speaks every turn into your helmet, and suggests petrol pumps and meal stops along the way. Plan your ride while you have a connection. Turn-by-turn and voice prompts keep going when the signal drops.
+RIDECORE turns a phone you keep on the handlebar into a riding device. It becomes that phone's home screen: speed, a map that zooms with you, the next turn and the trip, what's playing and the weather, big enough to read at a glance. There are no buttons to hunt for. You swipe it, like a watch.
 
-## Made for long days in the saddle
+## What it does
 
-- **Routes for bikes.** Choose Fastest, Shortest or Less traffic, and compare up to three routes. Expressways closed to two-wheelers are avoided unless you allow them.
-- **Voice turn-by-turn.** Spoken prompts, timed to your speed, go straight into your helmet headset. Miss a turn and the route recalculates on its own.
-- **Keeps going on weak signal.** Routes are calculated on your phone. Once a route is planned, turn-by-turn, voice prompts and stop suggestions work without a connection.
-- **Built for the handlebar.** A full-screen ride view while you're moving, a screen that stays on, and large touch targets that are easy to hit. Tap the compass for zen mode: just the map, your route and a big compass.
-- **Plans while you do other things.** Every route plan shows its progress in a notification, with Pause and Stop, so you can leave the app while it works. Set downloads to Wi-Fi only to save mobile data.
-- **A log of every ride.** Tap record on the map, or let navigation record for you. It keeps recording with the screen off or the app closed, and saves your track with distance, moving time, average and top speed and climb. Export it as GPX, or keep its path as a trip to ride again.
-- **See how your regular routes really go.** Rides on the same roads are sorted into routes, and rides to the same place into places. Compare how long each way usually takes, see when it's quickest to set off, and find the stretches where traffic slows you, drawn on the map.
-- **Choose your GPS.** Satellites only, for no mobile data at all; satellites with mobile data and Wi-Fi, for the quickest and most precise fix; or a battery saver.
-- **Save and share rides.** Keep trips in your library and open them later without planning again. A saved trip keeps the map along its route, so it shows without signal. Share a route with your riding group as one file, map included.
-- **Always up to date.** TrailCompass tells you when a new version is out and installs it from inside the app. Fuel and food data refreshes every month on its own.
+- **A dash you read at a glance.** Speed in big numbers, the live map with the next turn over it, and the time to go, distance left and arrival beside it. With no trip under way, the same spot shows the ride being recorded, what's playing (tap to pause) or the weather. The top line has the time, heading, GPS, battery and temperature, with an umbrella when rain is likely in the next three hours. Switch off any part you don't want (Settings → On the dash and Top line), and the rest takes its room.
+- **A map that rides with you.** It follows you and zooms out as you speed up, back in as you slow down. Settings → Speed zoom picks how far: ×0.5, ×1 or ×1.5. It's dark, in the dash's colours, with your route in green. Tap it to look around.
+- **One tap to go again.** Typing on a mount is slow, so your last six places come first on Where to, a tap each. Hold one to forget it. Search is there for somewhere new.
+- **Routes for bikes.** Fastest, Shortest or Less traffic, with up to three routes to compare before you start. Expressways closed to two-wheelers stay off unless you allow them. Both choices are kept for the next trip.
+- **Voice turn-by-turn.** Prompts timed to your speed, into your helmet headset. Miss a turn and it finds a new route.
+- **Turns you see from the corner of your eye.** As a turn comes up, the screen's edge on that side glows lime, brighter as you get closer, and pulses when it's time to turn. Arriving lights both edges green. It starts earlier the faster you ride. Settings → Turn glow switches it off. Routes are worked out on the phone, so once a trip is planned, guidance keeps going when the signal drops.
+- **A ride recorder.** One big face: tap it to record, to pause and to carry on, then **Save ride**. It keeps recording with the screen off. Every ride is kept with its shape, distance, moving time and top speed. Or switch on Auto-record and every trip records itself.
+- **Music on the ride.** A swipe right of the dash: what any music app on the phone is playing, with big keys to play, pause, go back and skip. Or internet radio in RIDECORE itself: star the stations you like and they come first, then the most played in your country. One plays at a time.
+- **A real home screen.** Make RIDECORE the phone's home app. Home always brings the dash back, Back never leaves it, and your music, calls and other apps are a swipe up. Hold an app to pin it to the top.
+- **Mounted your way.** Landscape or portrait, chosen the first time you open it and held either way up. The screen stays on all the time, or only while you navigate.
+- **Back to the dash on its own.** Leave another screen alone for 30 seconds, or come up to a turn, and the dash returns.
 
-## Stops that fit your ride
+## Swipe it like a watch
 
-**Fuel by tank range.** Tell TrailCompass how far a full tank takes you. It picks pumps near your route in the last stretch of each tank, then plans the next leg from the pump you chose. If a stretch has no pump, it tells you to fill up earlier.
+Every screen fills the phone. Swipe between them: each snaps into place, and dots show where you are. The dash is home.
 
-**Food by time of day.** Set when you leave. It finds breakfast, lunch or dinner where you'll be at that hour.
+```text
+              Settings                        pull down from the dash
+                 │
+   Music ──── Dash ── Where to ── Ride recorder ── Rides
+                 │
+               Apps                           swipe up from the dash
+```
 
-About **55,000 fuel stations** and **138,000 places to eat** across India are built into the app, so suggestions work offline. They're on the map too: tap one to head there or add it as a stop. The data is refreshed every month.
+| Screen | What's on it |
+| --- | --- |
+| **Dash** | Speed, the map with the next turn over it, and the trip. "Where to?" when you're not going anywhere. |
+| **Music** | What's playing, with keys to play, pause, go back and skip. Then radio: your starred stations, then the most played. |
+| **Where to** | Your last places as keys, then search. While a trip is under way, it's the trip instead: time to go, distance left, arrival, voice on or off, End (tap twice) and the next eight turns. |
+| **Ride recorder** | One big face to record, pause and carry on, and **Save ride**. |
+| **Rides** | Every ride you've recorded, drawn as its shape. Tap one to see it on the map. |
+| **Settings** | Big keys, lit when on: what the dash and the top line show, speed zoom, voice, turn glow, fuel and food on the map, auto-record, screen on, how the phone is mounted, the home app, music info, and the way out to the phone's own settings. |
+| **Apps** | The phone's other apps. Tap to open, hold to pin. |
 
-## How it works
+Choosing a route is done stopped. Pick a place and the map takes the whole screen with the routes on offer and **Start**. Scroll down for the route type and expressways.
 
-1. **Plan.** Search for your destination or drop a pin on the map. Add fuel, food or your own stops in the order you want them.
-2. **Preview.** Compare up to three routes by distance and time. Save the one you like, or share it with the group.
-3. **Ride.** Tap Start and follow the voice prompts. Go off route and it recalculates, keeping the stops you haven't reached yet.
+## Set up a riding phone
 
-## Install in a minute
+1. On the phone, open the [RIDECORE website](https://praneth2580.github.io/RIDECORE/) and tap **Download for Android** (about 10 MB).
+2. Open the downloaded file. If Android asks, let your browser install apps (*Install unknown apps*), then tap **Install**.
+3. Open RIDECORE, allow location, and pick how the phone sits on the mount: landscape or portrait.
+4. Pull down from the dash for Settings, tap **Home app** and choose RIDECORE. Home now brings you to the dash.
+5. Mount it and plug it in. The screen stays on, and the battery shows at the top.
 
-1. On your Android phone, open the [TrailCompass website](https://praneth2580.github.io/TrailCompass/) and tap **Download for Android** (about 10 MB).
-2. Open the downloaded file. If Android asks, let your browser install apps (*Install unknown apps*).
-3. Tap **Install**, open TrailCompass and allow location access.
-
-TrailCompass isn't on Google Play yet, so Android may warn you about installing an app from outside it. After this first install, new versions come through the app itself: it offers each one when it's released, or you can check from the **Offline** tab.
+RIDECORE isn't on Google Play, so Android may warn you about installing it. It doesn't update itself yet: to update, download the newer file from the website and install it over the one you have. Your rides and settings stay.
 
 ## Questions riders ask
 
 <details>
-<summary><strong>Is TrailCompass free?</strong></summary>
+<summary><strong>Is RIDECORE free?</strong></summary>
 
 Yes. There's no account to create and no ads.
 </details>
 
 <details>
-<summary><strong>Does it work offline?</strong></summary>
-
-Mostly. Plan your route while you have a connection and save it: the roads and the map along the route are kept on your phone, and turn-by-turn, voice prompts, the map and fuel and food suggestions then work without signal. You can also save the map of a whole city or state from the Offline tab. Away from saved trips and areas, the map needs a connection.
-</details>
-
-<details>
 <summary><strong>Which phones does it run on?</strong></summary>
 
-Android 6.0 or newer. There is no iPhone version.
+Android 6.0 or newer, with GPS. There's no iPhone version. An old phone you no longer carry is ideal: RIDECORE is made to be the only thing on it.
 </details>
 
 <details>
-<summary><strong>Where does the map and place data come from?</strong></summary>
+<summary><strong>Can I still use my other apps?</strong></summary>
 
-Maps, roads and search come from OpenStreetMap, through OpenFreeMap, Overpass and Nominatim. Fuel stations and places to eat come from the Overture Maps Foundation and OpenStreetMap.
+Yes. Swipe up from the dash for all of them: tap one to open it, hold one to pin it to the top. Home brings you back to the dash.
+</details>
+
+<details>
+<summary><strong>How does music work?</strong></summary>
+
+Swipe right from the dash. RIDECORE shows what any music app on the phone is playing, with keys to play, pause, go back and skip. To see the song's name, allow it once in Settings → **Music info**; the keys work without it. Or play internet radio from RIDECORE itself: your starred stations first (hold one to unstar it), then the most played in your country. Only stations that stream over HTTPS are listed. One plays at a time: starting the radio pauses the phone's music, and the other way round.
+</details>
+
+<details>
+<summary><strong>How do I get my old home screen back?</strong></summary>
+
+Pull down from the dash for Settings and tap **Phone settings**. In Android's settings, open Apps → Default apps → Home app and pick the one you had. The names differ a little from phone to phone.
+</details>
+
+<details>
+<summary><strong>Does it work without signal?</strong></summary>
+
+Partly. Routes are worked out on the phone, so once a trip is planned, turn-by-turn and voice prompts keep going without a connection. Searching for a place, planning a trip and loading the map for new areas need one.
+</details>
+
+<details>
+<summary><strong>Is it finished?</strong></summary>
+
+Not yet. RIDECORE is an early alpha: expect rough edges, and please [report what breaks](https://github.com/praneth2580/RIDECORE/issues).
+</details>
+
+<details>
+<summary><strong>What's TrailCompass?</strong></summary>
+
+RIDECORE's engine. [TrailCompass](https://praneth2580.github.io/TrailCompass/) is a motorcycle navigation app by the same developer. RIDECORE uses its routing, turn-by-turn, voice prompts, GPS and ride recording, and builds its own device around them.
+</details>
+
+<details>
+<summary><strong>Where do the map and place data come from?</strong></summary>
+
+Maps, roads and search come from OpenStreetMap, through OpenFreeMap, Overpass and Nominatim. Fuel stations and places to eat (Settings → Fuel & food) come from the Overture Maps Foundation and OpenStreetMap. The weather comes from Open-Meteo, and radio stations from Radio Browser.
 </details>
 
 <details>
 <summary><strong>Does it collect my data?</strong></summary>
 
-There's no account and no analytics. To show the map and plan routes, the app downloads data for the areas you use from the open-data services above. To name the places you ride to more than once, it asks Nominatim about them, with the position rounded to about 100 m, unless the name is already known from your trips; the answer is kept on your phone.
+There's no account and no analytics. Your rides, places, favourite stations and settings stay on the phone. To show the map, plan routes and search, the app fetches data for the areas you use from the open-data services above. The weather is asked for with your position rounded to about 5 km.
 </details>
 
 ## Ride safe
 
-TrailCompass is not a certified navigation or safety system. GPS, compass readings and map data can be wrong or unavailable. Keep a backup way to navigate, follow the road rules, and set your route before you ride: never operate the phone while riding.
+RIDECORE is not a certified navigation or safety system. GPS, compass readings and map data can be wrong or missing. Keep a backup way to navigate, follow the road rules, and choose your route before you ride. Don't work the phone while you're moving: it's made to be glanced at.
 
 ## Credits
 
-Map data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright) · map tiles by [OpenFreeMap](https://openfreemap.org) · places from the [Overture Maps Foundation](https://overturemaps.org) ([sources and licences](public/assets/poi/README.md)) · search by [Nominatim](https://nominatim.org) · roads through the [Overpass API](https://overpass-api.de).
+Built on the [TrailCompass](https://github.com/praneth2580/TrailCompass) engine. Map data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright) · map tiles by [OpenFreeMap](https://openfreemap.org) · places from the [Overture Maps Foundation](https://overturemaps.org) ([sources and licences](public/assets/poi/README.md)) · search by [Nominatim](https://nominatim.org) · roads through the [Overpass API](https://overpass-api.de) · weather data by [Open-Meteo.com](https://open-meteo.com) · radio stations from [Radio Browser](https://www.radio-browser.info).
 
 ## For developers
 
-Building TrailCompass or helping out? Start with **[DEVELOPMENT.md](DEVELOPMENT.md)**.
+Building RIDECORE or helping out? Start with **[DEVELOPMENT.md](DEVELOPMENT.md)**. The code, screen by screen, is in the **[Project Guide](docs/PROJECT_GUIDE.md)**, and how RIDECORE lives on TrailCompass's engine is in **[ridecore/README.md](ridecore/README.md)**.

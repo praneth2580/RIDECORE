@@ -10,9 +10,11 @@ import { locationService } from '../services/location.service';
 import { mapService } from '../services/map.service';
 import { navigationService } from '../services/navigation.service';
 import { tripPlanner } from '../services/trip-planner.service';
+import { ROUTING_PROFILES, type RoutingProfileId } from '../routing/routing-profiles';
 import type { Coordinate } from '../routing/routing-adapter';
 import type { SavedRoute } from '../types/route';
 import type { TripStop } from '../types/trip-stop';
+import { getZoomMultiplier, setZoomMultiplier } from './overrides/services/nav-display';
 
 export { MapView } from '../components/MapView';
 export { useKeepAwake } from '../hooks/useKeepAwake';
@@ -33,7 +35,8 @@ export { createTripStop } from '../types/trip-stop';
 export { mapTheme } from '../theme/map-theme';
 export type { RideRecord } from '../database/ride-repository';
 export type { TripPlannerState } from '../services/trip-planner.service';
-export type { Coordinate } from '../routing/routing-adapter';
+export type { Coordinate, TurnInstruction } from '../routing/routing-adapter';
+export { ROUTING_PROFILES, type RoutingProfileId };
 export type { CompassReading, GpsFix, NavigationState } from '../types/navigation';
 export type { PlaceHit, TripStop } from '../types/trip-stop';
 export type { SavedRoute } from '../types/route';
@@ -41,6 +44,64 @@ export { compassService, locationService, mapService, navigationService, tripPla
 
 /** Bumped by every plan and every end, so a slow plan can't land after either. */
 let planToken = 0;
+
+const PROFILE_KEY = 'ridecore.routeProfile';
+
+/** How routes are planned: the rider picks these while choosing a route. */
+export interface RouteOptions {
+  profile: RoutingProfileId;
+  /** Most expressways in India ban two-wheelers, so they're left out unless allowed. */
+  expressways: boolean;
+}
+
+/**
+ * The rider's route options, kept between trips. TrailCompass keeps the expressways
+ * choice itself; its route type lasts only as long as the app, so RIDECORE keeps that one.
+ */
+export function getRouteOptions(): RouteOptions {
+  const saved = localStorage.getItem(PROFILE_KEY);
+  return {
+    profile: ROUTING_PROFILES.find((profile) => profile.id === saved)?.id ?? 'fastest',
+    expressways: navigationService.getAllowExpressways(),
+  };
+}
+
+/** Keeps the options for the next plan. Re-planning the trip on offer is the caller's call. */
+export function setRouteOptions(options: RouteOptions): void {
+  localStorage.setItem(PROFILE_KEY, options.profile);
+  navigationService.setProfile(options.profile);
+  navigationService.setAllowExpressways(options.expressways);
+}
+
+const ZOOM_KEY = 'ridecore.zoomMultiplier';
+
+/**
+ * How strongly the map zooms out with speed, picked in Settings: ×1 is TrailCompass's
+ * own curve. The map zooms by speed on the dash and while navigating.
+ */
+export const SPEED_ZOOM_MULTIPLIERS = [0.5, 1, 1.5] as const;
+export type SpeedZoom = (typeof SPEED_ZOOM_MULTIPLIERS)[number];
+
+export function getSpeedZoom(): SpeedZoom {
+  return SPEED_ZOOM_MULTIPLIERS.find((m) => m === getZoomMultiplier()) ?? 1;
+}
+
+export function setSpeedZoom(multiplier: SpeedZoom): void {
+  localStorage.setItem(ZOOM_KEY, String(multiplier));
+  setZoomMultiplier(multiplier);
+}
+
+/** The saved multiplier, before the map first zooms. */
+function restoreSpeedZoom(): void {
+  try {
+    const saved = Number(localStorage.getItem(ZOOM_KEY));
+    const multiplier = SPEED_ZOOM_MULTIPLIERS.find((m) => m === saved);
+    if (multiplier) setZoomMultiplier(multiplier);
+  } catch {
+    // No storage (tests): TrailCompass's curve.
+  }
+}
+restoreSpeedZoom();
 
 /** Where the route starts: a fresh GPS fix, else the last one, else the map's centre. */
 async function startPoint(): Promise<Coordinate> {
@@ -62,6 +123,8 @@ async function startPoint(): Promise<Coordinate> {
  */
 export async function planTo(stop: TripStop): Promise<string | null> {
   const token = ++planToken;
+  // A saved trip, once offered, leaves its own route type behind in the engine.
+  navigationService.setProfile(getRouteOptions().profile);
   tripPlanner.setDestination(stop);
   mapService.setDestination(stop.coordinate);
   mapService.clearItineraryStops();

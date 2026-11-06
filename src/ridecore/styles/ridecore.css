@@ -1,7 +1,8 @@
 /*
- * RIDECORE's look: a navigation device on a bike, not an app. One black screen with the
- * speed, the map with the next turn, and the trip; big numbers, a grey second line, one lime accent,
- * green for the route, red for recording. No tabs, panels or borders.
+ * RIDECORE's look: a navigation device on a bike, worked like a watch. Black screens stacked
+ * to swipe through, the dash on top (speed, the map with the next turn, the trip); big
+ * numbers, a grey second line, one lime accent, green for the route, red for recording.
+ * Few buttons: what's on the screen is what you tap. No tabs, panels or borders.
  *
  * Loads after TrailCompass's src/index.css and MapLibre's stylesheet (main.tsx).
  * Style MapLibre's own elements under .tc-map-container, never with MapLibre's bare
@@ -56,7 +57,7 @@
   --tc-radius-sm: 14px;
 }
 
-/* ── The device: status line, the cluster, the controls ──── */
+/* ── The device: the status line over the stack of pages ─── */
 
 .rc-device {
   position: fixed;
@@ -64,9 +65,7 @@
   display: grid;
   /* minmax(0, …): nothing inside may widen the screen past the phone's. */
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 0.7rem;
-  padding: calc(0.55rem + var(--rc-top)) calc(0.9rem + var(--rc-right)) calc(0.8rem + var(--rc-bottom)) calc(0.9rem + var(--rc-left));
+  grid-template-rows: auto minmax(0, 1fr);
   background: var(--rc-bg);
   color: var(--rc-text);
   font-family: var(--rc-font);
@@ -74,48 +73,344 @@
   user-select: none;
 }
 
-/* Portrait: the dial on top, the map below, the trip under it. */
+/* ── The screens: swiped through like a watch's ─────────── */
+
+/* Two pagers make the device: screens side by side (left and right), and inside the
+   first, the dash's column (up and down). One screen at a time snaps into place. */
+.rc-pager {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.rc-pager-pages {
+  height: 100%;
+  scrollbar-width: none;
+}
+
+.rc-pager-pages::-webkit-scrollbar {
+  display: none;
+}
+
+/* Each contains only its own direction: a sideways swipe in the dash's column has to
+   reach the screens side by side. */
+.rc-pager[data-axis='x'] > .rc-pager-pages {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+}
+
+.rc-pager[data-axis='y'] > .rc-pager-pages {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scroll-snap-type: y mandatory;
+}
+
+.rc-pager-pages > * {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* Side by side: each the size of the screen, what it holds scrolling up and down inside it. */
+.rc-pager[data-axis='x'] > .rc-pager-pages > * {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+}
+
+.rc-pager[data-axis='x'] > .rc-pager-pages > .rc-page {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: none;
+}
+
+/* Stacked: each exactly one screen. */
+.rc-pager[data-axis='y'] > .rc-pager-pages > * {
+  height: 100%;
+}
+
+.rc-page {
+  min-height: 100%;
+  padding: 0.9rem calc(1.2rem + var(--rc-right)) calc(1.6rem + var(--rc-bottom)) calc(1.2rem + var(--rc-left));
+}
+
+/* Clear of the column's dots, down the right edge. */
+.rc-pager[data-axis='y'] .rc-page:not(.rc-page-dash) {
+  padding-right: calc(1.6rem + var(--rc-right));
+}
+
+/* Held on one screen: no swiping to the others. */
+.rc-pager[data-hold] > .rc-pager-pages {
+  overflow: hidden;
+}
+
+/* The map taking the screen: the dash is the only screen left, in both pagers. */
+.rc-pager[data-solo='0'] > .rc-pager-pages > :not(:nth-child(1)),
+.rc-pager[data-solo='1'] > .rc-pager-pages > :not(:nth-child(2)) {
+  display: none;
+}
+
+/* A screen filled exactly (searching, settings, apps): its head stays put and the rest
+   scrolls inside it. At the end of the apps or settings, the next swipe carries on to
+   the dash. */
+.rc-page[data-fill] {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.rc-page[data-fill] .rc-page-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+/* Where you are: dots along the bottom for the screens side by side, down the right edge
+   for the dash's column. */
+.rc-pager-dots {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+
+.rc-pager[data-axis='x'] > .rc-pager-dots {
+  bottom: calc(0.45rem + var(--rc-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.rc-pager[data-axis='y'] > .rc-pager-dots {
+  top: 50%;
+  right: calc(0.4rem + var(--rc-right));
+  flex-direction: column;
+  transform: translateY(-50%);
+}
+
+.rc-pager-dots li {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #3a3b41;
+  transition: width 200ms ease, height 200ms ease, background 200ms ease;
+}
+
+.rc-pager-dots li[data-on] {
+  background: var(--rc-lime);
+}
+
+.rc-pager[data-axis='x'] > .rc-pager-dots li[data-on] {
+  width: 16px;
+}
+
+.rc-pager[data-axis='y'] > .rc-pager-dots li[data-on] {
+  height: 16px;
+}
+
+/* A screen's name: small and centred at the top, as on a watch or a car's screen, so
+   what the screen holds gets the room. The whole width is used, either way up. */
+.rc-page-head,
+.rc-page-body {
+  width: 100%;
+  max-width: 60rem;
+  margin: 0 auto;
+}
+
+.rc-page-head {
+  margin-bottom: 1.1rem;
+  text-align: center;
+}
+
+.rc-page-head h2 {
+  margin: 0;
+  overflow: hidden;
+  color: var(--rc-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.rc-page-head p {
+  margin: 0.3rem 0 0;
+  overflow: hidden;
+  color: var(--rc-text);
+  font-size: 1.15rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rc-page-head p[data-tone='live'] {
+  color: var(--rc-red);
+}
+
+@media (orientation: landscape) {
+  .rc-page-head {
+    margin-bottom: 0.8rem;
+  }
+}
+
+/* The dash: exactly one screen, the speed, the road and the trip. The road runs from
+   edge to edge, so the speed and the trip keep their own distance from the sides. */
+.rc-page.rc-page-dash {
+  --rc-edge-left: calc(0.9rem + var(--rc-left));
+  --rc-edge-right: calc(0.9rem + var(--rc-right));
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  height: 100%;
+  padding: 0.6rem 0 calc(0.9rem + var(--rc-bottom));
+}
+
+/* Portrait: the dial on top, the road across the screen under it, the trip below.
+   Whatever the rider switched off gives its room to the rest (Settings → Dash). */
 .rc-cluster {
   min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: column;
   gap: 0.8rem;
 }
 
 .rc-speed {
+  flex: none;
   display: grid;
   place-items: center;
+  padding: 0 var(--rc-edge-right) 0 var(--rc-edge-left);
 }
 
 .rc-speed .rc-dial {
-  --rc-dial: min(64vw, 31dvh);
+  --rc-dial: min(66vw, 34dvh);
 }
 
-/* Landscape: speed, map and trip side by side, like a dashboard. */
+.rc-cluster > .rc-zone {
+  flex: 1 1 0;
+}
+
+/* No map: the speed takes its room, the next turn (or Where to) under it. */
+.rc-cluster[data-map='off'] {
+  justify-content: center;
+}
+
+.rc-cluster[data-map='off'] > .rc-speed {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.rc-cluster[data-map='off'] > .rc-zone {
+  flex: none;
+}
+
+.rc-cluster[data-map='off'] .rc-speed .rc-dial {
+  --rc-dial: min(84vw, 50dvh);
+}
+
+/* Everything switched off. */
+.rc-dash-hint {
+  margin: auto;
+  max-width: 18rem;
+  padding: 0 var(--rc-edge-right) 0 var(--rc-edge-left);
+  color: var(--rc-muted);
+  text-align: center;
+}
+
+/* Landscape: the speed and the trip either side, like a dashboard's dials, the road
+   across the whole screen behind them. Turns and Where to sit between the dials. */
 @media (orientation: landscape) {
   .rc-cluster {
+    --rc-speed-size: min(28vw, calc(100dvh - 5rem));
+    --rc-trip-size: min(22vw, calc(100dvh - 5.5rem));
+    --rc-room-left: calc(var(--rc-edge-left) + var(--rc-speed-size) + 1.2rem);
+    --rc-room-right: calc(var(--rc-edge-right) + var(--rc-trip-size) + 1.2rem);
+    display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-rows: minmax(0, 1fr);
     align-items: center;
-    gap: 1.2rem;
+    column-gap: 1.2rem;
   }
 
-  .rc-speed .rc-dial {
-    --rc-dial: min(27vw, calc(100dvh - 8.5rem));
+  .rc-cluster[data-speed='off'] {
+    --rc-room-left: var(--rc-edge-left);
+  }
+
+  .rc-cluster[data-trip='off'] {
+    --rc-room-right: var(--rc-edge-right);
+  }
+
+  .rc-cluster[data-map='off'] {
+    --rc-speed-size: min(36vw, calc(100dvh - 5rem));
+    --rc-trip-size: min(27vw, calc(100dvh - 5.5rem));
+  }
+
+  .rc-speed {
+    grid-area: 1 / 1;
+    z-index: 1;
+    padding: 0 0 0 var(--rc-edge-left);
+  }
+
+  .rc-speed .rc-dial,
+  .rc-cluster[data-map='off'] .rc-speed .rc-dial {
+    --rc-dial: var(--rc-speed-size);
+  }
+
+  .rc-cluster > .rc-trip {
+    grid-area: 1 / 3;
+    z-index: 1;
+    margin-right: var(--rc-edge-right);
+  }
+
+  .rc-cluster > .rc-zone[data-mode='dash'] {
+    grid-area: 1 / 1 / 2 / 4;
+    align-self: stretch;
+  }
+
+  .rc-cluster > .rc-zone[data-map='off'],
+  .rc-dash-hint {
+    grid-area: 1 / 2;
+    align-self: center;
   }
 }
 
-/* The status line. */
+/* The status line: on every page, like a watch's time. */
 .rc-statusline {
   display: flex;
   align-items: center;
   gap: 0.9rem;
   min-height: 1.5rem;
-  padding: 0 0.3rem;
+  padding: calc(0.55rem + var(--rc-top)) calc(1.2rem + var(--rc-right)) 0 calc(1.2rem + var(--rc-left));
   color: var(--rc-copy);
   font-size: 0.8rem;
   white-space: nowrap;
+}
+
+.rc-statusline-weather {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.rc-statusline-weather svg {
+  width: 15px;
+  height: 15px;
+}
+
+.rc-statusline-rain {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: 0.25rem;
+  color: var(--rc-lime);
+  font-weight: 500;
 }
 
 .rc-statusline-time {
@@ -267,6 +562,81 @@
   display: none;
 }
 
+/* On the dash the map is a display: swipes pass through it to the pages, a tap opens it.
+   No box: the road runs edge to edge and fades into the black, like the road on a
+   dashboard. Only the map fades: the turn, Where to and the map's credit stay sharp. */
+.rc-zone[data-mode='dash'] {
+  --rc-fade-x: 9%;
+  --rc-fade-y: 16%;
+  /* Everything on the map, the credit too, stays under the dials. */
+  z-index: 0;
+  border-radius: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.rc-zone[data-mode='dash'] .tc-map-container .maplibregl-canvas-container {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image:
+    linear-gradient(to bottom, transparent, #000 var(--rc-fade-y), #000 calc(100% - var(--rc-fade-y)), transparent),
+    linear-gradient(to right, transparent, #000 var(--rc-fade-x), #000 calc(100% - var(--rc-fade-x)), transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to bottom, transparent, #000 var(--rc-fade-y), #000 calc(100% - var(--rc-fade-y)), transparent),
+    linear-gradient(to right, transparent, #000 var(--rc-fade-x), #000 calc(100% - var(--rc-fade-x)), transparent);
+  mask-composite: intersect;
+}
+
+.rc-zone[data-mode='dash'] :is(.rc-zone-head, .rc-zone-foot) {
+  left: var(--rc-edge-left);
+  right: var(--rc-edge-right);
+}
+
+/* Landscape: the dials cover the sides, so the road fades out under them. */
+@media (orientation: landscape) {
+  .rc-zone[data-mode='dash'] {
+    --rc-fade-x: 24%;
+    --rc-fade-y: 12%;
+  }
+
+  .rc-zone[data-mode='dash'] :is(.rc-zone-head, .rc-zone-foot) {
+    left: var(--rc-room-left);
+    right: var(--rc-room-right);
+  }
+
+  /* The map's credit, between the dials where it can be read. */
+  .rc-zone[data-mode='dash'] .tc-map-container .maplibregl-ctrl-bottom-right {
+    right: var(--rc-room-right);
+  }
+}
+
+/* The map switched off: kept, hidden, so it opens at once from the turn; the turn or
+   Where to stays, in line under the speed. */
+.rc-zone[data-map='off'] {
+  position: static;
+  height: auto;
+  overflow: visible;
+}
+
+.rc-zone[data-map='off'] .tc-map-shell,
+.rc-zone[data-map='off'] .tc-map-shell * {
+  visibility: hidden;
+}
+
+.rc-zone[data-map='off'] :is(.rc-zone-head, .rc-zone-foot) {
+  position: static;
+  margin: 0 var(--rc-edge-right) 0 var(--rc-edge-left);
+}
+
+.rc-zone[data-map='off'] .rc-zone-head:empty {
+  display: none;
+}
+
+.rc-zone[data-mode='dash'] .tc-map-container {
+  pointer-events: none;
+}
+
 .rc-zone-head {
   position: absolute;
   top: 0.6rem;
@@ -292,9 +662,17 @@
   width: 100%;
   min-height: 4.4rem;
   padding: 0.7rem 1.1rem;
+  border: none;
   border-radius: 24px;
   background: rgba(0, 0, 0, 0.92);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  color: var(--rc-text);
+  font: inherit;
+  text-align: left;
+}
+
+button.rc-banner {
+  cursor: pointer;
 }
 
 .rc-banner[data-glyph] {
@@ -400,50 +778,8 @@
   font: inherit;
   font-size: 1.05rem;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
-}
-
-.rc-routes {
-  display: flex;
-  gap: 0.5rem;
-  max-width: 100%;
-  overflow-x: auto;
-}
-
-.rc-route {
-  display: grid;
-  grid-template-columns: auto auto;
-  align-items: center;
-  column-gap: 0.45rem;
-  flex-shrink: 0;
-  padding: 0.55rem 0.9rem;
-  border: 2px solid transparent;
-  border-radius: var(--rc-radius-sm);
-  background: rgba(0, 0, 0, 0.88);
-  color: var(--rc-text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.rc-route[aria-checked='true'] {
-  border-color: var(--rc-lime);
-}
-
-.rc-route i {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
-.rc-route b {
-  font-weight: 500;
-}
-
-.rc-route span {
-  grid-column: 2;
-  color: var(--rc-muted);
-  font-size: 0.82rem;
 }
 
 .rc-zone-recenter {
@@ -462,7 +798,365 @@
   cursor: pointer;
 }
 
+/* ── The map taking the screen ────────────────────────────── */
+
+/* Choosing a route (planning, choosing, a failed plan), or the map opened from the dash
+   or from a ride. Stopped, so the speed, the trip, the status line and the other pages
+   give way to the map, edge to edge. */
+.rc-device[data-mode] {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.rc-device[data-mode] .rc-page-dash {
+  padding: 0;
+}
+
+.rc-device[data-mode] .rc-cluster {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.rc-device[data-mode] .rc-zone {
+  border-radius: 0;
+}
+
+.rc-device[data-mode='map'] .rc-zone-head {
+  top: calc(0.6rem + var(--rc-top));
+  left: calc(0.6rem + var(--rc-left));
+  right: calc(0.6rem + var(--rc-right));
+}
+
+.rc-device[data-mode='map'] .rc-zone-recenter {
+  right: calc(0.9rem + var(--rc-right));
+  bottom: calc(0.9rem + var(--rc-bottom));
+}
+
+/* Portrait: along the bottom. Landscape: down the left, the map beside it. */
+.rc-zone-panel {
+  position: absolute;
+  left: calc(0.6rem + var(--rc-left));
+  right: calc(0.6rem + var(--rc-right));
+  bottom: calc(0.6rem + var(--rc-bottom));
+  z-index: 2;
+  display: flex;
+  /* Routes and Start in view; the options peek out under them, a scroll away. */
+  max-height: min(20.5rem, 58%);
+}
+
+@media (orientation: landscape) {
+  .rc-zone-panel {
+    top: calc(0.6rem + var(--rc-top));
+    right: auto;
+    width: min(24rem, 46%);
+    max-height: none;
+  }
+}
+
+.rc-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  width: 100%;
+  min-height: 0;
+  padding: 1rem;
+  border-radius: var(--rc-radius);
+  background: rgba(0, 0, 0, 0.94);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+.rc-plan-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0 0 0 0.2rem;
+}
+
+.rc-plan-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.rc-plan-close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  margin: -0.2rem -0.2rem 0 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--rc-raised);
+  color: var(--rc-text);
+  cursor: pointer;
+}
+
+.rc-plan-title {
+  margin: 0;
+  overflow: hidden;
+  font-size: clamp(1.35rem, 5.5vw, 1.8rem);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (orientation: landscape) {
+  .rc-plan-title {
+    font-size: clamp(1.25rem, 2.6vw, 1.6rem);
+  }
+}
+
+.rc-plan-text {
+  display: -webkit-box;
+  margin: 0.15rem 0 0;
+  overflow: hidden;
+  color: var(--rc-copy);
+  font-size: 0.92rem;
+  line-height: 1.35;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.rc-plan-text[data-tone='error'] {
+  color: #ff7a70;
+}
+
+/* The routes, Start, then the options: scrolls when they don't all fit. */
+.rc-plan-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.rc-plan-body .rc-section {
+  margin: 0.9rem 0.2rem 0;
+}
+
+.rc-plan-body:empty {
+  display: none;
+}
+
+.rc-plan-progress {
+  position: relative;
+  flex-shrink: 0;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--rc-raised);
+}
+
+.rc-plan-progress i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 35%;
+  border-radius: inherit;
+  background: var(--rc-lime);
+  animation: rc-sweep 1.3s ease-in-out infinite;
+}
+
+.rc-plan-progress[data-known] i {
+  width: calc(var(--p) * 100%);
+  animation: none;
+  transition: width 300ms ease;
+}
+
+@keyframes rc-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(290%);
+  }
+}
+
+/* Up to three routes, side by side on the narrowest phone: the time, then the colour and the distance. */
+.rc-routes {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.5rem;
+}
+
+.rc-route {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'time time'
+    'dot distance';
+  align-items: center;
+  column-gap: 0.4rem;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 58px;
+  padding: 0.45rem 0.75rem;
+  border: 2px solid transparent;
+  border-radius: var(--rc-radius-sm);
+  background: var(--rc-tile);
+  color: var(--rc-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rc-route[aria-checked='true'] {
+  border-color: var(--rc-lime);
+}
+
+.rc-route i {
+  grid-area: dot;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.rc-route b,
+.rc-route span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rc-route b {
+  grid-area: time;
+  font-size: 1.05rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-route span {
+  grid-area: distance;
+  color: var(--rc-muted);
+  font-size: 0.82rem;
+}
+
+/* Route type: one of three, like a gear selector. */
+.rc-seg {
+  display: grid;
+  flex-shrink: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--rc-tile);
+}
+
+.rc-seg button {
+  min-width: 0;
+  min-height: 50px;
+  padding: 0 0.35rem;
+  overflow: hidden;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--rc-copy);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.rc-seg button[aria-checked='true'] {
+  background: var(--rc-lime);
+  color: #000;
+}
+
+.rc-plan .rc-settings {
+  flex-shrink: 0;
+  padding: 0.15rem;
+  border-radius: var(--rc-radius-sm);
+}
+
+/* Landscape phones are short: a little tighter, so it all fits without scrolling. */
+@media (orientation: landscape) {
+  .rc-plan {
+    gap: 0.6rem;
+    padding: 0.8rem;
+  }
+
+  .rc-plan-body {
+    gap: 0.5rem;
+  }
+
+  .rc-route {
+    min-height: 52px;
+  }
+
+  .rc-seg button {
+    min-height: 46px;
+  }
+
+  .rc-plan .rc-toggle {
+    min-height: 50px;
+    padding-block: 0.45rem;
+  }
+}
+
 /* ── The trip: a line in portrait, a dial in landscape ────── */
+
+/* What plays is its own play and pause. */
+button.rc-trip {
+  border: none;
+  background: transparent;
+  color: var(--rc-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rc-trip-icon {
+  display: inline-grid;
+  place-items: center;
+  margin-right: 0.35rem;
+  vertical-align: -0.2em;
+  color: var(--rc-lime);
+}
+
+.rc-trip-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Music, in portrait: who and where above, the title big, play or pause beside. */
+.rc-trip[data-kind='music'] {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'label detail'
+    'value detail';
+  align-items: center;
+}
+
+.rc-trip[data-kind='music'] .rc-trip-value {
+  overflow: hidden;
+  font-size: 1.55rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rc-trip[data-kind='music'] .rc-trip-detail {
+  display: grid;
+  place-items: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 50%;
+  background: var(--rc-tile);
+  color: var(--rc-lime);
+}
+
+.rc-trip[data-kind='music'] .rc-trip-detail svg {
+  width: 22px;
+  height: 22px;
+}
 
 .rc-trip {
   display: grid;
@@ -472,7 +1166,7 @@
     'scale scale scale';
   align-items: baseline;
   column-gap: 0.9rem;
-  padding: 0 0.5rem;
+  padding: 0 calc(var(--rc-edge-right) + 0.5rem) 0 calc(var(--rc-edge-left) + 0.5rem);
 }
 
 .rc-trip-value {
@@ -524,7 +1218,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: min(22vw, calc(100dvh - 9rem));
+    width: var(--rc-trip-size);
     aspect-ratio: 1;
     padding: 1.3rem;
     border-radius: 50%;
@@ -551,93 +1245,31 @@
     width: 70%;
     margin-top: 0.7rem;
   }
+
+  /* Music in the right dial, as the dash video has the radio there. */
+  .rc-trip[data-kind='music'] .rc-trip-value {
+    display: -webkit-box;
+    max-width: 100%;
+    font-size: clamp(1.1rem, 2.6vw, 1.5rem);
+    line-height: 1.15;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .rc-trip[data-kind='music'] .rc-trip-detail {
+    width: 2.9rem;
+    height: 2.9rem;
+    margin-top: 0.5rem;
+  }
+
+  button.rc-trip {
+    background: var(--rc-dial-face);
+    text-align: center;
+  }
 }
 
-/* ── Controls: round, big enough for gloves ───────────────── */
-
-/* They fit across a 360px-wide phone: End, voice, record, menu. */
-.rc-controls {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.65rem;
-}
-
-.rc-ctl {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 56px;
-  height: 56px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: var(--rc-tile);
-  color: var(--rc-text);
-  font: inherit;
-  cursor: pointer;
-  transition: transform 80ms ease, filter 120ms ease;
-}
-
-.rc-ctl:active:not(:disabled) {
-  transform: scale(0.95);
-  filter: brightness(1.15);
-}
-
-.rc-ctl:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.rc-ctl-wide {
-  width: auto;
-  min-width: 7.5rem;
-  padding: 0 1.6rem;
-  border-radius: 999px;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.rc-ctl-small {
-  width: 46px;
-  height: 46px;
-}
-
-.rc-ctl-go {
-  background: var(--rc-lime);
-  color: #000;
-}
-
-.rc-ctl-end {
-  min-width: 5.5rem;
-  padding: 0 1.2rem;
-  background: rgba(255, 69, 58, 0.18);
-  color: #ff7a70;
-}
-
-.rc-ctl[data-off='true'] {
-  color: var(--rc-muted);
-}
-
-.rc-ctl-rec svg {
-  color: var(--rc-red);
-}
-
-.rc-ctl-rec[data-state='recording'] {
-  background: var(--rc-red);
-}
-
-.rc-ctl-rec[data-state='recording'] svg {
-  color: #fff;
-  animation: rc-blink 1.4s ease-in-out infinite;
-}
-
-.rc-ctl-rec[data-state='paused'] {
-  box-shadow: inset 0 0 0 2px var(--rc-red);
-}
-
-/* Narrow phones (360px): the five buttons and the status line still fit. */
+/* Narrow phones (360px): the status line still fits. */
 @media (max-width: 380px) {
   .rc-statusline {
     gap: 0.6rem;
@@ -646,127 +1278,54 @@
   .rc-statusline-date {
     display: none;
   }
-
-  .rc-controls {
-    gap: 0.5rem;
-  }
-
-  .rc-ctl {
-    width: 52px;
-    height: 52px;
-  }
-
-  .rc-ctl-end {
-    min-width: 4.6rem;
-    padding: 0 1rem;
-  }
 }
 
-/* ── Sheets: everything that isn't the main screen ────────── */
-
-.rc-sheet-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
-}
-
-.rc-sheet {
-  display: flex;
-  flex-direction: column;
-  width: min(40rem, 100%);
-  max-height: 90dvh;
-  padding: 1rem calc(1.1rem + var(--rc-right)) calc(1.1rem + var(--rc-bottom)) calc(1.1rem + var(--rc-left));
-  border-radius: var(--rc-radius) var(--rc-radius) 0 0;
-  background: var(--rc-surface);
-  color: var(--rc-text);
-  font-family: var(--rc-font);
-}
-
-.rc-sheet-backdrop[data-full='true'] .rc-sheet {
-  width: 100%;
-  height: 100%;
-  max-height: none;
-  padding-top: calc(1rem + var(--rc-top));
-  border-radius: 0;
-  background: var(--rc-bg);
-}
-
-.rc-sheet-head {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  width: 100%;
-  max-width: 46rem;
-  margin: 0 auto 0.9rem;
-}
-
-.rc-sheet-head h2 {
-  flex: 1;
-  margin: 0;
-  font-size: 1.6rem;
-  font-weight: 500;
-  letter-spacing: -0.02em;
-}
-
-.rc-sheet-body {
-  width: 100%;
-  max-width: 46rem;
-  min-height: 0;
-  margin: 0 auto;
-  overflow-y: auto;
-}
-
-.rc-sheet-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.7rem;
-  margin-top: 1.1rem;
-}
-
-.rc-sheet-actions .rc-ctl-wide {
-  width: 100%;
-  min-width: 0;
-  padding: 0 0.8rem;
-}
-
-.rc-ride-stats {
-  display: flex;
-  gap: 2.5rem;
-}
-
-.rc-ride-stats span {
-  display: flex;
-  flex-direction: column;
-}
-
-.rc-ride-stats b {
-  font-size: 2.4rem;
-  font-weight: 400;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-}
-
-.rc-ride-stats small {
-  color: var(--rc-muted);
-}
-
+/* Search: one field; the keyboard's search key searches, the × closes the search. */
 .rc-search-form {
   display: flex;
   gap: 0.6rem;
+  margin-top: 0.9rem;
 }
 
-.rc-search-form input {
+.rc-search-close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 58px;
+  height: 58px;
+  border: none;
+  border-radius: 50%;
+  background: var(--rc-raised);
+  color: var(--rc-text);
+  cursor: pointer;
+}
+
+.rc-search {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
   min-height: 58px;
-  padding: 0 1.3rem;
+  padding: 0 1.2rem;
   border: 2px solid transparent;
   border-radius: 999px;
   background: var(--rc-tile);
+  color: var(--rc-muted);
+}
+
+.rc-search:focus-within {
+  border-color: var(--rc-lime);
+  color: var(--rc-lime);
+}
+
+.rc-search input {
+  flex: 1;
+  min-width: 0;
+  height: 54px;
+  padding: 0;
+  border: none;
+  background: none;
   color: var(--rc-text);
   font: inherit;
   font-size: 1.05rem;
@@ -774,13 +1333,20 @@
   user-select: text;
 }
 
-.rc-search-form input:focus {
-  border-color: var(--rc-lime);
+.rc-search input::-webkit-search-cancel-button {
+  display: none;
 }
 
 .rc-note {
   margin: 0.9rem 0.3rem 0;
   color: var(--rc-copy);
+}
+
+.rc-note[data-center] {
+  margin-top: 1.4rem;
+  color: var(--rc-muted);
+  font-size: 0.85rem;
+  text-align: center;
 }
 
 .rc-note[data-tone='error'] {
@@ -803,6 +1369,8 @@
 /* Rows: places, trips, rides, menu entries. */
 .rc-rows {
   display: grid;
+  /* minmax(0, …): a long name ends in "…" instead of widening the page. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.5rem;
   margin: 0.8rem 0 0;
   padding: 0;
@@ -818,10 +1386,10 @@
   align-items: center;
   gap: 0.9rem;
   width: 100%;
-  min-height: 64px;
-  padding: 0.75rem 1rem;
+  min-height: 72px;
+  padding: 0.8rem 1.1rem;
   border: none;
-  border-radius: 20px;
+  border-radius: 22px;
   background: var(--rc-tile);
   color: var(--rc-text);
   font: inherit;
@@ -838,6 +1406,7 @@
 
 .rc-row-text b {
   overflow: hidden;
+  font-size: 1.05rem;
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -856,17 +1425,6 @@
   color: var(--rc-muted);
   font-size: 0.9rem;
   font-style: normal;
-}
-
-.rc-row-icon {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background: var(--rc-raised);
-  color: var(--rc-lime);
 }
 
 .rc-thumb {
@@ -894,62 +1452,11 @@
   fill: var(--rc-lime);
 }
 
-/* Settings. */
+/* A box for a few controls (the route panel's options). */
 .rc-tile {
   padding: 1rem 1.1rem;
   border-radius: var(--rc-radius);
   background: var(--rc-tile);
-}
-
-.rc-tile-big {
-  margin: 0;
-  font-size: 1.3rem;
-  font-weight: 500;
-}
-
-.rc-tile-sub {
-  margin: 0.2rem 0 0;
-  color: var(--rc-copy);
-  font-size: 0.88rem;
-  line-height: 1.4;
-}
-
-.rc-empty {
-  margin-top: 0.8rem;
-  text-align: center;
-}
-
-.rc-list {
-  display: grid;
-  gap: 0.5rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.rc-item {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-}
-
-.rc-item-text {
-  flex: 1;
-  min-width: 0;
-}
-
-.rc-item-title {
-  margin: 0;
-  overflow: hidden;
-  font-weight: 500;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rc-item-sub {
-  margin: 0.15rem 0 0;
-  color: var(--rc-muted);
-  font-size: 0.82rem;
 }
 
 .rc-settings {
@@ -958,6 +1465,320 @@
   padding: 0.4rem;
 }
 
+/* ── Keys: a device's controls, one big square each ─────── */
+
+/* As many across as fit: two in portrait, four or five in landscape. */
+.rc-keys {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(8.5rem, 100%), 1fr));
+  gap: 0.6rem;
+}
+
+.rc-key-wrap {
+  display: grid;
+}
+
+.rc-key {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+  width: 100%;
+  min-height: 6.6rem;
+  padding: 0.9rem 1rem 0.85rem;
+  border: none;
+  border-radius: 24px;
+  background: var(--rc-tile);
+  color: var(--rc-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  transition: transform 80ms ease, background 150ms ease;
+}
+
+.rc-key:active {
+  transform: scale(0.97);
+}
+
+/* Off: grey. On: the icon lit lime, the state in lime. Readable at a glance. */
+.rc-key-icon {
+  display: grid;
+  place-items: center;
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 50%;
+  background: var(--rc-raised);
+  color: var(--rc-copy);
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.rc-key-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.rc-key[data-on] .rc-key-icon {
+  background: var(--rc-lime);
+  color: #000;
+}
+
+.rc-key-text {
+  display: flex;
+  flex-direction: column;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.rc-key-text small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A place's name may take two lines. */
+.rc-key-text b {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 1.02rem;
+  font-weight: 500;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.rc-key[aria-checked='false'] .rc-key-text b {
+  color: var(--rc-copy);
+}
+
+.rc-key-text small {
+  color: var(--rc-muted);
+  font-size: 0.82rem;
+}
+
+.rc-key[data-on] .rc-key-text small {
+  color: var(--rc-lime);
+}
+
+/* A key with a few values: rising bars, lit up to the one set. */
+.rc-key-steps {
+  position: absolute;
+  top: 1.05rem;
+  right: 1rem;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 20px;
+}
+
+.rc-key-steps i {
+  width: 6px;
+  border-radius: 3px;
+  background: var(--rc-raised);
+}
+
+.rc-key-steps i:nth-child(1) {
+  height: 9px;
+}
+
+.rc-key-steps i:nth-child(2) {
+  height: 14px;
+}
+
+.rc-key-steps i:nth-child(3) {
+  height: 20px;
+}
+
+.rc-key-steps i[data-on] {
+  background: var(--rc-lime);
+}
+
+/* Landscape is short: the icon beside its word, so more keys fit on a screen. */
+@media (orientation: landscape) {
+  .rc-keys {
+    grid-template-columns: repeat(auto-fill, minmax(min(10rem, 100%), 1fr));
+  }
+
+  .rc-key {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.8rem;
+    min-height: 4.75rem;
+    padding: 0.7rem 0.9rem;
+  }
+
+  .rc-key-icon {
+    flex-shrink: 0;
+  }
+
+  .rc-key-steps {
+    top: 50%;
+    right: 0.9rem;
+    transform: translateY(-50%);
+  }
+
+  .rc-key:has(.rc-key-steps) {
+    padding-right: 2.8rem;
+  }
+}
+
+/* The offline maps, listed under their key. */
+.rc-packs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.4rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rc-packs li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 18px;
+  background: var(--rc-surface);
+}
+
+.rc-packs b {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rc-packs small {
+  flex-shrink: 0;
+  color: var(--rc-muted);
+  font-size: 0.82rem;
+}
+
+/* ── Cards: trips and rides, by their shape ───────────────── */
+
+.rc-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(8.8rem, 100%), 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rc-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  padding: 0.6rem 0.6rem 0.85rem;
+  border: none;
+  border-radius: 24px;
+  background: var(--rc-tile);
+  color: var(--rc-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 80ms ease;
+}
+
+.rc-card:active {
+  transform: scale(0.97);
+}
+
+/* Landscape: wider, so a ride's details fit on their line. */
+@media (orientation: landscape) {
+  .rc-cards {
+    grid-template-columns: repeat(auto-fill, minmax(min(10.5rem, 100%), 1fr));
+  }
+}
+
+.rc-card .rc-thumb {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  margin-bottom: 0.6rem;
+  border-radius: 18px;
+}
+
+.rc-card b,
+.rc-card strong,
+.rc-card small {
+  padding: 0 0.35rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rc-card b {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.rc-card strong {
+  font-size: 1.55rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-card small {
+  color: var(--rc-muted);
+  font-size: 0.8rem;
+}
+
+/* Nothing here yet: a quiet icon and a few words, centred on the screen. */
+.rc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 21rem;
+  margin: 2.2rem auto 0;
+  text-align: center;
+}
+
+.rc-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 4.6rem;
+  height: 4.6rem;
+  margin-bottom: 0.6rem;
+  border-radius: 50%;
+  background: var(--rc-tile);
+  color: var(--rc-lime);
+}
+
+.rc-empty-icon svg {
+  width: 30px;
+  height: 30px;
+}
+
+.rc-empty-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.rc-empty-text {
+  margin: 0;
+  color: var(--rc-muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+@media (orientation: landscape) {
+  .rc-empty {
+    margin-top: 1rem;
+  }
+}
+
+/* The route panel's switches. */
 .rc-toggle {
   display: flex;
   align-items: center;
@@ -1019,23 +1840,6 @@
   transform: translateX(20px);
 }
 
-.rc-toggle em {
-  color: var(--rc-muted);
-  font-size: 1.6rem;
-  font-style: normal;
-  line-height: 1;
-}
-
-.rc-home {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.rc-home[data-home='true'] .rc-item-title {
-  color: var(--rc-lime);
-}
-
 .rc-btn {
   display: inline-flex;
   align-items: center;
@@ -1052,9 +1856,575 @@
   cursor: pointer;
 }
 
-.rc-btn-quiet {
-  background: var(--rc-raised);
+.rc-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.rc-btn:active:not(:disabled) {
+  filter: brightness(1.12);
+  transform: scale(0.98);
+}
+
+/* The one action a page or panel has: full width, big enough for gloves. */
+.rc-btn-wide {
+  flex-shrink: 0;
+  width: 100%;
+  min-height: 58px;
+  font-size: 1.05rem;
+}
+
+
+/* ── The ride recorder: one face to tap ───────────────────── */
+
+.rc-rec {
+  display: grid;
+  justify-items: center;
+  gap: 1.4rem;
+  padding-top: 0.6rem;
+}
+
+.rc-rec-face {
+  --rc-ring: var(--rc-raised);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: min(68vw, 46dvh);
+  aspect-ratio: 1;
+  padding: 0;
+  border: 10px solid var(--rc-ring);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 30%, #202124, #111214 70%);
   color: var(--rc-text);
+  font: inherit;
+  cursor: pointer;
+  container-type: inline-size;
+  transition: transform 80ms ease, border-color 200ms ease;
+}
+
+.rc-rec-face:active {
+  transform: scale(0.98);
+}
+
+.rc-rec-face[data-state='recording'] {
+  --rc-ring: var(--rc-red);
+  animation: rc-rec-glow 2s ease-in-out infinite;
+}
+
+.rc-rec-face[data-state='paused'] {
+  --rc-ring: #5a5b60;
+}
+
+@keyframes rc-rec-glow {
+  50% {
+    box-shadow: 0 0 0 10px rgba(255, 69, 58, 0.14);
+  }
+}
+
+.rc-rec-value {
+  font-size: 17cqi;
+  font-weight: 330;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-rec-time {
+  margin-top: 2cqi;
+  color: var(--rc-copy);
+  font-size: 8cqi;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-rec-dot {
+  width: 26cqi;
+  height: 26cqi;
+  border-radius: 50%;
+  background: var(--rc-red);
+}
+
+.rc-rec-hint {
+  margin-top: 5cqi;
+  color: var(--rc-muted);
+  font-size: 5.5cqi;
+}
+
+.rc-rec .rc-actions {
+  margin-top: 0;
+}
+
+/* Landscape: the face and Save side by side, so both fit the short screen. */
+@media (orientation: landscape) {
+  .rc-rec {
+    grid-template-columns: auto auto;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+    padding-top: 0;
+  }
+
+  .rc-rec-face {
+    width: min(40vw, calc(100dvh - 8rem));
+    border-width: 8px;
+  }
+}
+
+/* ── Music: what plays, and the radio ─────────────────────── */
+
+/* Portrait: the player on top, the stations under it. Landscape: side by side, the
+   stations scrolling on their own. */
+.rc-music {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 1.4rem;
+}
+
+.rc-player {
+  display: grid;
+  gap: 1.1rem;
+  padding: 1rem;
+  border-radius: var(--rc-radius);
+  background: var(--rc-surface);
+}
+
+.rc-player-now {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--rc-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rc-player-now:disabled {
+  cursor: default;
+}
+
+.rc-player-art {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 5.4rem;
+  height: 5.4rem;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--rc-tile);
+  color: var(--rc-lime);
+}
+
+.rc-player-art svg {
+  width: 34px;
+  height: 34px;
+}
+
+.rc-player-art img,
+.rc-key-icon img,
+.rc-station-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* A station's logo sits whole on white, as most are drawn for. */
+.rc-player-art[data-source='radio'] img,
+.rc-key-icon img,
+.rc-station-logo img {
+  object-fit: contain;
+  background: #fff;
+}
+
+.rc-player-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.rc-player-text b {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 1.35rem;
+  font-weight: 500;
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.rc-player-text small {
+  overflow: hidden;
+  color: var(--rc-muted);
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rc-player-text small[data-tone='error'] {
+  color: #ff7a70;
+}
+
+/* Back, play, next: round, big, the middle one biggest and lit. */
+.rc-transport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.6rem;
+}
+
+.rc-transport button {
+  display: grid;
+  place-items: center;
+  width: 4.2rem;
+  height: 4.2rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--rc-tile);
+  color: var(--rc-text);
+  cursor: pointer;
+  transition: transform 80ms ease;
+}
+
+.rc-transport button svg {
+  width: 26px;
+  height: 26px;
+}
+
+.rc-transport .rc-transport-play {
+  width: 5.4rem;
+  height: 5.4rem;
+  background: var(--rc-lime);
+  color: #000;
+}
+
+.rc-transport .rc-transport-play svg {
+  width: 32px;
+  height: 32px;
+}
+
+.rc-transport button:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.rc-transport button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.rc-player-access {
+  margin-top: 0.2rem;
+}
+
+.rc-key-icon:has(img) {
+  overflow: hidden;
+}
+
+/* A station: tap the row to play it, the star to keep it. */
+.rc-station {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.rc-station .rc-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.rc-station[data-on] .rc-row {
+  box-shadow: inset 0 0 0 2px var(--rc-lime);
+}
+
+.rc-station[data-on] .rc-row-text b {
+  color: var(--rc-lime);
+}
+
+.rc-station-logo {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.9rem;
+  height: 2.9rem;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--rc-raised);
+  color: var(--rc-copy);
+}
+
+.rc-star {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 3.6rem;
+  height: 72px;
+  padding: 0;
+  border: none;
+  border-radius: 22px;
+  background: var(--rc-tile);
+  color: var(--rc-muted);
+  cursor: pointer;
+}
+
+.rc-star[aria-pressed='true'] {
+  color: var(--rc-lime);
+}
+
+.rc-music-radio .rc-section:first-child {
+  margin-top: 0.3rem;
+}
+
+@media (orientation: landscape) {
+  .rc-music {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    height: 100%;
+  }
+
+  .rc-player {
+    align-self: start;
+  }
+
+  .rc-music-radio {
+    height: 100%;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-width: none;
+  }
+}
+
+/* ── The phone's apps: a home screen's drawer ───────────── */
+
+.rc-apps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.9rem, 1fr));
+  gap: 0.9rem 0.4rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rc-section + .rc-apps {
+  margin-top: 0;
+}
+
+.rc-app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.35rem 0.1rem;
+  border: none;
+  border-radius: var(--rc-radius-sm);
+  background: none;
+  color: var(--rc-text);
+  font: inherit;
+  cursor: pointer;
+  -webkit-touch-callout: none;
+}
+
+.rc-app:active {
+  background: var(--rc-tile);
+}
+
+.rc-app img,
+.rc-app i {
+  width: 56px;
+  height: 56px;
+}
+
+.rc-app i {
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: var(--rc-raised);
+  color: var(--rc-lime);
+  font-size: 1.5rem;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.rc-app span {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* ── The trip under way ───────────────────────────────────── */
+
+/* Portrait: the numbers, the two keys, then the turns. Landscape: the turns beside them,
+   scrolling on their own. */
+.rc-tripview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 1.6rem;
+}
+
+.rc-readouts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.rc-readouts div {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  min-width: 0;
+}
+
+.rc-readouts dd {
+  margin: 0;
+  overflow: hidden;
+  font-size: clamp(1.45rem, 7vw, 2.3rem);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-readouts dt {
+  color: var(--rc-muted);
+  font-size: 0.82rem;
+}
+
+.rc-tripview-arrived {
+  margin: 0;
+  color: var(--rc-lime);
+  font-size: 2.6rem;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  text-align: center;
+}
+
+/* Round keys under the numbers: big for gloves, a word under each. */
+.rc-actions {
+  display: flex;
+  justify-content: center;
+  gap: 2.4rem;
+  margin-top: 1.4rem;
+}
+
+.rc-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 5.5rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--rc-copy);
+  font: inherit;
+  cursor: pointer;
+}
+
+.rc-action span {
+  display: grid;
+  place-items: center;
+  width: 4.8rem;
+  height: 4.8rem;
+  border-radius: 50%;
+  background: var(--rc-tile);
+  color: var(--rc-text);
+  transition: transform 80ms ease, background 150ms ease;
+}
+
+.rc-action span svg {
+  width: 28px;
+  height: 28px;
+}
+
+.rc-action:active span {
+  transform: scale(0.95);
+}
+
+.rc-action b {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.rc-action[data-on] span,
+.rc-action[data-tone='go'] span {
+  background: var(--rc-lime);
+  color: #000;
+}
+
+.rc-action[data-tone='end'] span {
+  background: rgba(255, 69, 58, 0.16);
+  color: #ff7a70;
+}
+
+.rc-action[data-tone='end'][data-confirm] span {
+  background: var(--rc-red);
+  color: #fff;
+}
+
+.rc-action[data-tone='end'][data-confirm] b {
+  color: #ff7a70;
+}
+
+.rc-turns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (orientation: landscape) {
+  .rc-tripview {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    height: 100%;
+    gap: 1.6rem;
+  }
+
+  .rc-tripview-main {
+    align-self: center;
+  }
+
+  .rc-tripview > .rc-turns {
+    height: 100%;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-width: none;
+  }
+}
+
+/* ── Turns ahead, while navigating ────────────────────────── */
+
+.rc-turn {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-height: 64px;
+  padding: 0.6rem 1rem;
+  border-radius: 20px;
+  background: var(--rc-tile);
+}
+
+.rc-turn .rc-glyph {
+  width: 2.4rem;
+  height: 2.4rem;
+}
+
+.rc-turn .rc-row-text b {
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .rc-layout-choice {
@@ -1130,6 +2500,7 @@
 .rc-device-choose {
   display: block;
   overflow-y: auto;
+  padding: var(--rc-top) calc(0.9rem + var(--rc-right)) var(--rc-bottom) calc(0.9rem + var(--rc-left));
 }
 
 .rc-choose {
@@ -1202,6 +2573,67 @@
   color: var(--rc-muted);
   font-size: 0.85rem;
   line-height: 1.35;
+}
+
+/* ── The edge glow for turns ─────────────────────────────── */
+
+/* Over every screen, under the toast, never in the way of a tap. Each edge is a band of
+   light fading inwards, with a bright line at the very edge; its opacity is the glow's
+   strength (TurnGlowEdges). */
+.rc-glow {
+  --rc-glow-rgb: 223, 254, 69;
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.rc-glow[data-tone='arrive'] {
+  --rc-glow-rgb: 97, 192, 79;
+}
+
+.rc-glow i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: clamp(3rem, 13vw, 8rem);
+  opacity: 0;
+  transition: opacity 450ms ease;
+}
+
+.rc-glow i[data-edge='left'] {
+  left: 0;
+  background:
+    linear-gradient(to right, rgba(var(--rc-glow-rgb), 0.95) 0 4px, transparent 4px),
+    linear-gradient(to right, rgba(var(--rc-glow-rgb), 0.55), rgba(var(--rc-glow-rgb), 0.18) 40%, rgba(var(--rc-glow-rgb), 0));
+}
+
+.rc-glow i[data-edge='right'] {
+  right: 0;
+  background:
+    linear-gradient(to left, rgba(var(--rc-glow-rgb), 0.95) 0 4px, transparent 4px),
+    linear-gradient(to left, rgba(var(--rc-glow-rgb), 0.55), rgba(var(--rc-glow-rgb), 0.18) 40%, rgba(var(--rc-glow-rgb), 0));
+}
+
+/* Turn now: the light beats. */
+.rc-glow[data-urgent] {
+  animation: rc-glow-beat 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes rc-glow-beat {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-glow[data-urgent] {
+    animation: none;
+  }
 }
 
 /* ── Toast ────────────────────────────────────────────────── */

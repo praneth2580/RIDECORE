@@ -12,7 +12,7 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SITE_URL = 'https://praneth2580.github.io/TrailCompass/';
+const SITE_URL = 'https://praneth2580.github.io/RIDECORE/';
 /** App icons the page reuses. */
 const ICONS = ['favicon.svg', 'favicon-32.png', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'];
 

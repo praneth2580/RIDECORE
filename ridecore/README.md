@@ -18,6 +18,7 @@ RIDECORE's files, so they never conflict.
 | A TrailCompass file that has to change (last resort) | `src/ridecore/overrides/<same path as under src/>` |
 | RIDECORE's Android code | `android/app/src/main/java/com/praneth2580/ridecore/` |
 | Build tooling | `ridecore/` |
+| Its docs and website | `README.md`, `DEVELOPMENT.md`, `docs/PROJECT_GUIDE.md`, `site/`: TrailCompass's once, now RIDECORE's, kept on merges by `.gitattributes` ([below](#docs-and-the-website)) |
 
 ## How it fits together
 
@@ -35,13 +36,96 @@ RIDECORE's files, so they never conflict.
   markers, place popups, the map's credit. `ridecore.css` sets TrailCompass's `--tc-*`
   tokens to RIDECORE's colours so those match.
 
-RIDECORE is a navigation device, not an app with pages: one screen
-(`src/ridecore/app/App.tsx`) with a status line, the speed dial, the live map with the
-next turn over it, and the trip, plus a few round buttons that change with what's
-happening (Where to / Start / End / voice / record / menu). TrailCompass's fuel and food
-pins start switched off (Settings switches them on), so the map stays clean.
-Everything else opens in a sheet over it: Where to (search, saved trips), the menu
-(past rides, settings), the ride's controls, and "End navigation?". Landscape lays the
+RIDECORE is the phone's home screen, worked like a watch: screens to swipe through in
+both directions instead of buttons (`src/ridecore/app/App.tsx`, two `components/Pager.tsx`).
+Each snaps into place; dots along the bottom say which screen, dots down the right edge
+where you are in the dash's column. A status line (time, GPS, battery, recording) sits
+over all of them.
+
+The screens are a device's, not a phone app's: each one's name small and centred at the
+top (`components/Page.tsx`), big glove-sized targets, few words. Settings are keys
+(`components/Key.tsx`: an icon, a word and its state, lit lime when on) instead of rows
+of switches with explanations; actions are round keys with a word under them; trips and
+rides are cards showing their shape. Grids fill the screen either way up: two keys across
+in portrait, four or more in landscape, where keys put the icon beside the word.
+
+Left and right, from the dash:
+
+0. Music, a swipe right of the dash (`screens/MusicPage.tsx`): what plays, from any of
+   the phone's music apps or RIDECORE's own radio, with big keys to play, pause, go back
+   and skip. Then radio: favourite stations as keys (star a station; hold its key to
+   unstar it), then the country's most played stations. One plays at a time: starting the
+   radio pauses the phone's music and the other way round (`src/ridecore/media.ts`).
+1. The dash: the speed dial, the live map with the next turn over it, and the trip.
+   No buttons but "Where to?" when idle. The map has no box: it runs the full width of
+   the screen and fades into the black at its edges (in landscape it runs behind the two
+   dials, fading out under them). It's a display that always follows the rider and zooms
+   with speed; swipes go through it, and a tap gives it the whole screen to look around
+   (one close chip). "Arrived" is tapped to finish. Settings → On the dash and Top line switch each
+   part on or off (speed, map, trip, Where to, music, weather; the status line's clock,
+   heading, GPS, battery and weather; `src/ridecore/dash.ts`); what's off gives its room
+   to the rest. With the map
+   off the next turn still shows, under the speed. The readout under the map (the right
+   dial in landscape) shows the most useful thing: the trip, else the ride, else what
+   plays (tap it to pause or play), else the weather, else the time.
+2. Where to (`screens/GoPage.tsx`): typing on a mounted phone is slow, so places picked
+   before (from search or these keys) come first, one tap to go again (`src/ridecore/recent.ts`, the last
+   6; hold one to forget it), then saved trips as cards, then search (the keyboard's
+   search key). A tap in the search field holds this screen until the search is closed
+   (×, Back, picking a place, or 30 s alone): the field stays put and the results scroll
+   inside. While a trip is under way this is the trip instead (`screens/TripPage.tsx`):
+   time to go, distance left and arrival as big as the dash's numbers, two round keys
+   (voice; End, two taps, no dialog) and the next 8 turns, beside them in landscape.
+3. The ride recorder (`screens/RecordPage.tsx`): one big face; tap to record, pause and
+   carry on. Save keeps the ride.
+4. Rides: every ride recorded, as cards with its shape; tap one to see it on the map.
+
+Up and down, on the dash only, as on a phone's home screen: swipe down for settings,
+swipe up for the phone's apps (`screens/AppsPage.tsx`). Tap an app to open it; hold one
+to pin it to the top. At the end of either list the next swipe carries on to the dash,
+and leaving the column sideways closes it.
+
+As a launcher: Home always brings the dash back (a route being chosen stays chosen),
+Back closes what's open and then goes back to the dash, and nothing is behind it. Left
+on another screen for 30 s, or with a turn coming up or arriving, the dash comes back
+on its own.
+
+Choosing a route is done stopped, so from planning until Start the map takes the whole
+screen with the route panel over it (`components/RoutePanel.tsx`): the routes on offer
+and Start, a × to cancel, and a scroll further down the route type (Fastest / Shortest /
+Less traffic) and expressways. The grey line says which are in use. Changing one plans
+again, and both are kept for the next trip.
+
+Turns are also seen without reading them: as one comes up, the screen's edge on its
+side glows lime over whatever screen shows (`src/ridecore/glow.ts`,
+`components/TurnGlowEdges.tsx`). It starts about 12 seconds out at the rider's speed,
+brightens to the turn and pulses at it; a U-turn lights the right edge (left-hand
+traffic), arriving lights both green. Settings → Riding → Turn glow switches it off.
+
+Music, radio and weather:
+
+- **The phone's music.** `RideCoreMedia` (Java) follows the phone's media sessions: the
+  title, artist, app and cover of what plays, and its controls. Seeing what plays needs
+  notification access, which Android only lets the rider give: the Music screen and
+  Settings → Music info open the screen for it (`RideCoreMediaListener` is the listener
+  that access is given to; it does nothing itself). Without it play, pause and skip still
+  work, sent as a headset's media buttons are.
+- **Radio** (`src/ridecore/radio.ts`): stations from Radio Browser
+  (radio-browser.info, an open directory, no key), the country's most played, played in
+  RIDECORE's own audio element. Only HTTPS streams: the app is served over HTTPS
+  (`androidScheme`) and mixed content is off. A station silent after 15 s has failed.
+- **Weather** (`src/ridecore/weather.ts`): Open-Meteo (free, no key), every 15 minutes
+  and on riding into the next ~5 km square; the position sent is rounded to that square.
+  The temperature shows in the top line, with an umbrella and the chance when rain is
+  40% likely or more in the next three hours.
+
+The map zooms with speed, out when fast and in when slow: on the dash, and on any screen
+while navigating. Settings → Speed zoom multiplies how far it zooms out, tapped through ×0.5,
+×1 and ×1.5 (×1 is TrailCompass's own curve). The multiplier lives in the
+`services/nav-display.ts` override, and `engine.ts` keeps the choice. TrailCompass zooms
+by speed only while navigating; `mapService.setFollowZoomBySpeed()` (below) lets the
+dash's camera do it while just riding too. TrailCompass's fuel and food pins start
+switched off (Settings switches them on), so the map stays clean. Landscape lays the
 speed, road and trip side by side; portrait stacks them.
 
 ## The phone it runs on
@@ -49,13 +133,17 @@ speed, road and trip side by side; portrait stacks them.
 RIDECORE is made for a phone kept for it alone, as that phone's home screen.
 
 - **Layout.** The first start asks how the phone is mounted, landscape or portrait;
-  Settings → Screen changes it. `RideCoreDevicePlugin` (Java) keeps the choice and holds
+  Settings → Mounted changes it. `RideCoreDevicePlugin` (Java) keeps the choice and holds
   the screen that way, either way up, from the moment the app starts.
-- **Home screen.** RIDECORE can be Android's home app: Settings → Home screen → Choose,
-  then pick RIDECORE. Home and switching the phone on then open it, and Back stops at the
-  dashboard.
-- **Screen on.** On all the time unless Settings → Keep the screen on is off.
-- **The way out.** Settings → Android settings opens the phone's own settings (Wi-Fi,
+- **Home screen.** RIDECORE can be Android's home app: Settings → Home app,
+  then pick RIDECORE. Home and switching the phone on then open it, Home pressed in
+  RIDECORE goes back to the dash, and Back stops at the dashboard.
+- **The phone's apps.** Swiping up from the dash lists them, as a launcher's app drawer
+  does; tap one to open it, hold one to pin it to the top. `RideCoreDevicePlugin` lists
+  them (`listApps`, icons as PNG data URLs), opens them (`openApp`), and tells the web
+  side when Home is pressed (the `home` event). In a browser there are none to list.
+- **Screen on.** On all the time unless Settings → Screen on is set to Navigating.
+- **The way out.** Settings → Phone settings opens the phone's own settings (Wi-Fi,
   Bluetooth, and Apps → Default apps → Home app to give the home screen back).
 
 In a browser the choice is kept but nothing is locked: the window decides the layout.
@@ -93,17 +181,19 @@ Tests are left alone: a test always gets the very file it names, and nothing in
 
 Overrides in use:
 
-- `services/nav-display.ts`: wraps TrailCompass's and pulls the navigation zoom back
+- `services/nav-display.ts`: wraps TrailCompass's and pulls the zoom by speed back
   1.3 levels (`ZOOM_OUT`), since RIDECORE's map is under half the screen TrailCompass
-  zooms for. Everything else in the file is TrailCompass's, re-exported.
-  Test: `src/ridecore/nav-zoom.test.ts`.
+  zooms for, and scales how far it zooms out by the rider's multiplier
+  (`setZoomMultiplier`), never further out than zoom 11. Everything else in the file is
+  TrailCompass's, re-exported. Test: `src/ridecore/nav-zoom.test.ts`.
 - `theme/map-theme.ts`: TrailCompass's, resolving RIDECORE's map colours (below) under
   the build's env instead of TrailCompass's defaults.
 
 ## Map colours
 
-TrailCompass's map theme (`src/theme/`, `.env.example`, DEVELOPMENT.md → "Theming the
-map") colours the basemap, routes and markers. RIDECORE's colours are
+TrailCompass's map theme (`src/theme/`, `.env.example`, and "Theming the map" in
+TrailCompass's DEVELOPMENT.md: `git show upstream/main:DEVELOPMENT.md`) colours the
+basemap, routes and markers. RIDECORE's colours are
 `RIDECORE_MAP_THEME` in `src/ridecore/map-theme.ts`: TrailCompass's `dark` preset
 underneath, RIDECORE's neutral black, green route and lime rider over it. A build's env
 (`VITE_MAP_THEME`, `VITE_MAP_THEME_JSON`, `VITE_MAP_COLOR_*` in `.env.local` or the
@@ -124,9 +214,33 @@ done
 # src/main.tsx → src/ridecore/main.tsx, src/app/App.tsx → src/ridecore/app/useRideCore.ts.
 git diff ORIG_HEAD HEAD -- src/main.tsx src/app/App.tsx
 
+# TrailCompass's changes to its docs and site, which the merge kept out (below): carry
+# over by hand anything RIDECORE needs, e.g. a new engine gotcha or setup step.
+git log --oneline -p ORIG_HEAD..HEAD^2 -- README.md DEVELOPMENT.md docs site scripts/render-og-image.mjs
+
 npm test && npm run build
 git push
 ```
+
+## Docs and the website
+
+`README.md`, `DEVELOPMENT.md`, `docs/PROJECT_GUIDE.md`, `site/` (the website) and
+`scripts/render-og-image.mjs` began as TrailCompass's and are now RIDECORE's own. Editing
+them in place would conflict on every merge, so `.gitattributes` marks them `merge=ours`:
+a merge keeps RIDECORE's version and drops TrailCompass's changes to them (listed by the
+`git log` above). That needs the driver, once per clone:
+
+```bash
+git config merge.ours.driver true
+```
+
+Without it these files merge line by line and conflict. TrailCompass's own docs stay
+readable for the engine: `git show upstream/main:DEVELOPMENT.md` and
+`git show upstream/main:docs/PROJECT_GUIDE.md`, or on GitHub.
+
+The website is <https://praneth2580.github.io/RIDECORE/>, published by TrailCompass's
+`pages.yml` with RIDECORE's site and newest `ridecore-v*` APK. DEVELOPMENT.md → "The
+website on GitHub Pages" covers how.
 
 ## Releasing
 
@@ -162,10 +276,30 @@ Keep this list short and current. These are the only places a merge can conflict
   as they are; any new Java file TrailCompass adds goes in that same package.
 - `MainActivity.java`: one line registering `RideCoreDevicePlugin`, at the top of `onCreate`.
 - `AndroidManifest.xml`: a second intent filter on `MainActivity` (HOME, DEFAULT), so
-  RIDECORE can be the home screen. TrailCompass's launcher filter is untouched.
+  RIDECORE can be the home screen; a `<queries>` entry for launcher activities, so it
+  can list the phone's apps (Android 11 and later hide them otherwise); and the
+  `RideCoreMediaListener` service, so the rider can give RIDECORE notification access to
+  see what the phone plays. TrailCompass's launcher filter is untouched.
+- `src/services/map.service.ts`: `setFollowZoomBySpeed()`, so the camera following the
+  rider zooms by speed without navigating too (the dash). Off unless called, so
+  TrailCompass behaves as before; a candidate to send upstream. Three small spots: the
+  flag and its setter, `cameraTarget()`'s dot branch, and `stepNavZoom()` taking the
+  zoom to start from.
 - Name "RIDECORE": `app_name` and `title_activity_main` in
   `android/app/src/main/res/values/strings.xml` (the name under the app icon), and
   `appName` and `appendUserAgent` in `capacitor.config.ts` (how the app names itself to
   OpenFreeMap).
+- `scripts/build-site.mjs`: `SITE_URL`, RIDECORE's site address for the sitemap.
+- `.github/workflows/pages.yml`, step "Add the newest app release": it looks up the
+  newest `ridecore-v*` release, pre-releases included (GitHub's "latest release" skips
+  them), accepts its tag, and drops `ridecore-v` for `version` in `latest.json`.
+- Replaced outright, and kept by `.gitattributes` so they don't conflict:
+  `README.md`, `DEVELOPMENT.md`, `docs/PROJECT_GUIDE.md`, `site/`,
+  `scripts/render-og-image.mjs` ([Docs and the website](#docs-and-the-website)).
 
-To check for others: `git diff --stat upstream/main -- . ':!ridecore' ':!src/ridecore'`
+To check for others:
+
+```bash
+git diff --stat upstream/main -- . ':!ridecore' ':!src/ridecore' ':!.gitattributes' \
+  ':!README.md' ':!DEVELOPMENT.md' ':!docs' ':!site' ':!scripts/render-og-image.mjs'
+```

@@ -1,9 +1,12 @@
-/** A tile saying a list is empty, and how it fills. */
-export function Empty({ title, text }: { title: string; text: string }) {
+import type { ReactNode } from 'react';
+
+/** Nothing here yet: a big quiet icon, a few words, and how it fills. */
+export function Empty({ icon, title, text }: { icon?: ReactNode; title: string; text: string }) {
   return (
-    <div className="rc-tile rc-empty">
-      <p className="rc-tile-big">{title}</p>
-      <p className="rc-tile-sub">{text}</p>
+    <div className="rc-empty">
+      {icon ? <span className="rc-empty-icon">{icon}</span> : null}
+      <p className="rc-empty-title">{title}</p>
+      <p className="rc-empty-text">{text}</p>
     </div>
   );
 }

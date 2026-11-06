@@ -1,8 +1,39 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { App as CapacitorApp } from '@capacitor/app';
-import { mapPackService, mapService, rideLogService, voiceGuidance, type MapPackMeta } from '../engine';
+import {
+  getSpeedZoom,
+  mapPackService,
+  mapService,
+  rideLogService,
+  setSpeedZoom,
+  SPEED_ZOOM_MULTIPLIERS,
+  type MapPackMeta,
+} from '../engine';
+import type { DashShows } from '../dash';
 import { device, type HomeStatus, type Layout } from '../device';
-import { Empty } from '../components/Empty';
+import {
+  BatteryIcon,
+  ClockIcon,
+  CompassIcon,
+  FlagIcon,
+  FuelIcon,
+  GaugeIcon,
+  GearIcon,
+  GlowIcon,
+  GpsIcon,
+  HomeIcon,
+  MapIcon,
+  MusicIcon,
+  OfflineIcon,
+  RecordIcon,
+  ScreenOnIcon,
+  SearchIcon,
+  SunIcon,
+  VoiceIcon,
+  ZoomIcon,
+} from '../components/Icons';
+import { usePhoneMedia } from '../media';
+import { Key } from '../components/Key';
 import { bytes } from '../format';
 import { LayoutPicture } from './ChooseLayout';
 
@@ -11,17 +42,94 @@ interface SettingsPageProps {
   onLayout: (layout: Layout) => void;
   keepOn: boolean;
   onKeepOn: (on: boolean) => void;
+  /** Also on the trip page while navigating, so it's kept above both. */
+  voiceOn: boolean;
+  onVoice: (on: boolean) => void;
+  /** What the dash shows, just below this page. */
+  dash: DashShows;
+  onDash: (shows: DashShows) => void;
 }
 
-/** How the phone shows RIDECORE, how RIDECORE rides, and the maps it keeps. */
-export function SettingsPage({ layout, onLayout, keepOn, onKeepOn }: SettingsPageProps) {
-  const [voiceOn, setVoiceOn] = useState(() => voiceGuidance.isEnabled());
+const onOff = (on: boolean) => (on ? 'On' : 'Off');
+
+/**
+ * Settings as a device has them: keys to tap, lit when on, in a grid that fills the
+ * screen either way up. What the dash shows first, as this sits right above it.
+ */
+export function SettingsPage({ layout, onLayout, keepOn, onKeepOn, voiceOn, onVoice, dash, onDash }: SettingsPageProps) {
   const [autoRecord, setAutoRecord] = useState(() => rideLogService.getAutoRecord());
   const [pins, setPins] = useState(() => mapService.overlaysOnMap());
+  const [speedZoom, setSpeedZoomState] = useState(getSpeedZoom);
+
+  /** A key for one part of the dash. */
+  const part = (key: keyof DashShows, label: string, icon: ReactNode) => (
+    <Key icon={icon} label={label} state={onOff(dash[key])} on={dash[key]} onClick={() => onDash({ ...dash, [key]: !dash[key] })} />
+  );
+
+  // One key for three values: each tap the next, round again after the last.
+  const zoomAt = SPEED_ZOOM_MULTIPLIERS.indexOf(speedZoom);
+  const nextZoom = () => {
+    const next = SPEED_ZOOM_MULTIPLIERS[(zoomAt + 1) % SPEED_ZOOM_MULTIPLIERS.length]!;
+    setSpeedZoom(next);
+    setSpeedZoomState(next);
+  };
 
   return (
     <>
-      <h3 className="rc-section">Screen</h3>
+      <h3 className="rc-section">On the dash</h3>
+      <div className="rc-keys">
+        {part('speed', 'Speed', <GaugeIcon />)}
+        {part('map', 'Map', <MapIcon />)}
+        {part('trip', 'Trip', <FlagIcon />)}
+        {part('whereTo', 'Where to', <SearchIcon />)}
+        {part('music', 'Music', <MusicIcon />)}
+        {part('weather', 'Weather', <SunIcon />)}
+        <Key
+          icon={<ZoomIcon />}
+          label="Speed zoom"
+          state={`×${speedZoom}`}
+          steps={{ count: SPEED_ZOOM_MULTIPLIERS.length, at: zoomAt }}
+          onClick={nextZoom}
+        />
+      </div>
+
+      <h3 className="rc-section">Top line</h3>
+      <div className="rc-keys">
+        {part('clock', 'Clock', <ClockIcon />)}
+        {part('heading', 'Heading', <CompassIcon />)}
+        {part('gps', 'GPS', <GpsIcon />)}
+        {part('battery', 'Battery', <BatteryIcon />)}
+        {part('topWeather', 'Weather', <SunIcon />)}
+      </div>
+
+      <h3 className="rc-section">Riding</h3>
+      <div className="rc-keys">
+        <Key icon={<VoiceIcon />} label="Voice" state={onOff(voiceOn)} on={voiceOn} onClick={() => onVoice(!voiceOn)} />
+        {part('turnGlow', 'Turn glow', <GlowIcon />)}
+        <Key
+          icon={<FuelIcon />}
+          label="Fuel & food"
+          state={onOff(pins)}
+          on={pins}
+          onClick={() => {
+            mapService.setOverlaysShown(!pins);
+            setPins(!pins);
+          }}
+        />
+        <Key
+          icon={<RecordIcon />}
+          label="Auto-record"
+          state={autoRecord ? 'Every trip' : 'Off'}
+          on={autoRecord}
+          onClick={() => {
+            rideLogService.setAutoRecord(!autoRecord);
+            setAutoRecord(!autoRecord);
+          }}
+        />
+        <Key icon={<ScreenOnIcon />} label="Screen on" state={keepOn ? 'Always' : 'Navigating'} on={keepOn} onClick={() => onKeepOn(!keepOn)} />
+      </div>
+
+      <h3 className="rc-section">Mounted</h3>
       <div className="rc-layout-choice" role="radiogroup" aria-label="Screen layout">
         {(['landscape', 'portrait'] as const).map((option) => (
           <button key={option} type="button" role="radio" aria-checked={layout === option} onClick={() => onLayout(option)}>
@@ -30,99 +138,34 @@ export function SettingsPage({ layout, onLayout, keepOn, onKeepOn }: SettingsPag
           </button>
         ))}
       </div>
-      <div className="rc-tile rc-settings">
-        <Toggle label="Keep the screen on" hint="Always, not only while navigating" on={keepOn} onChange={onKeepOn} />
-      </div>
-
-      <h3 className="rc-section">Home screen</h3>
-      <HomeScreen />
-
-      <h3 className="rc-section">Riding</h3>
-      <div className="rc-tile rc-settings">
-        <Toggle
-          label="Voice guidance"
-          hint="Spoken turns while navigating"
-          on={voiceOn}
-          onChange={(on) => {
-            voiceGuidance.setEnabled(on);
-            setVoiceOn(on);
-          }}
-        />
-        <Toggle
-          label="Fuel and food on the map"
-          hint="Petrol pumps and places to eat, as pins"
-          on={pins}
-          onChange={(on) => {
-            mapService.setOverlaysShown(on);
-            setPins(on);
-          }}
-        />
-        <Toggle
-          label="Record every trip"
-          hint="Starts recording when navigation starts"
-          on={autoRecord}
-          onChange={(on) => {
-            rideLogService.setAutoRecord(on);
-            setAutoRecord(on);
-          }}
-        />
-      </div>
-
-      <h3 className="rc-section">Maps on this phone</h3>
-      <MapsOnPhone />
 
       <h3 className="rc-section">Phone</h3>
-      <div className="rc-tile rc-settings">
-        <button type="button" className="rc-toggle" onClick={() => void device.openSettings()}>
-          <span>
-            <b>Android settings</b>
-            <small>Wi-Fi, Bluetooth, sound and the rest of the phone</small>
-          </span>
-          <em aria-hidden>›</em>
-        </button>
-      </div>
+      <PhoneKeys />
     </>
   );
 }
 
-/** Whether Home opens RIDECORE, checked again on coming back from Android's settings. */
-function HomeScreen() {
-  const [status, setStatus] = useState<HomeStatus | null>(null);
+/**
+ * The phone around RIDECORE: whether it's the home screen, the maps kept for riding
+ * without signal, and the way out to Android's own settings.
+ */
+function PhoneKeys() {
+  const [home, setHome] = useState<HomeStatus | null>(null);
+  const [packs, setPacks] = useState<MapPackMeta[] | null>(null);
+  const [showPacks, setShowPacks] = useState(false);
+  const media = usePhoneMedia();
 
+  // Checked again on coming back from Android's settings.
   useEffect(() => {
     const check = () =>
       void device
         .getHomeStatus()
-        .then(setStatus)
-        .catch(() => setStatus({ supported: false, isHome: false }));
+        .then(setHome)
+        .catch(() => setHome({ supported: false, isHome: false }));
     check();
     const listener = CapacitorApp.addListener('resume', check);
     return () => void listener.then((l) => l.remove());
   }, []);
-
-  if (!status) return <p className="rc-note">Checking…</p>;
-  if (!status.supported) {
-    return <Empty title="On the phone only" text="Installed on Android, RIDECORE can be the home screen: Home and switching the phone on always open it." />;
-  }
-  return (
-    <div className="rc-tile rc-home" data-home={status.isHome ? 'true' : undefined}>
-      <div className="rc-item-text">
-        <p className="rc-item-title">{status.isHome ? 'RIDECORE is the home screen' : 'Make RIDECORE the home screen'}</p>
-        <p className="rc-item-sub">
-          {status.isHome
-            ? 'Home and switching the phone on always open it.'
-            : 'Pick RIDECORE as the home app, so Home and switching the phone on open it.'}
-        </p>
-      </div>
-      <button type="button" className={status.isHome ? 'rc-btn rc-btn-small rc-btn-quiet' : 'rc-btn rc-btn-small'} onClick={() => void device.openHomeSettings()}>
-        {status.isHome ? 'Change' : 'Choose'}
-      </button>
-    </div>
-  );
-}
-
-function MapsOnPhone() {
-  const [packs, setPacks] = useState<MapPackMeta[] | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -139,32 +182,49 @@ function MapsOnPhone() {
     };
   }, []);
 
-  if (!packs) return <p className="rc-note">Loading maps…</p>;
-  if (packs.length === 0) return <Empty title="No offline maps" text="Maps saved for trips or areas let you ride without signal." />;
-  return (
-    <ul className="rc-list">
-      {packs.map((pack) => (
-        <li key={pack.id} className="rc-tile rc-item">
-          <div className="rc-item-text">
-            <p className="rc-item-title">{pack.name}</p>
-            <p className="rc-item-sub">
-              {pack.kind === 'route' ? 'Trip map' : 'Area'} · {bytes(pack.bytes)} · {Math.round((pack.saved / Math.max(1, pack.tiles)) * 100)}% saved
-            </p>
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
-}
+  const homeState = !home ? '…' : !home.supported ? 'Phone only' : home.isHome ? 'RIDECORE' : 'Tap to set';
+  const packState = !packs ? '…' : packs.length === 0 ? 'None' : `${packs.length} · ${bytes(packs.reduce((sum, pack) => sum + pack.bytes, 0))}`;
 
-function Toggle({ label, hint, on, onChange }: { label: string; hint: string; on: boolean; onChange: (on: boolean) => void }) {
   return (
-    <button type="button" role="switch" aria-checked={on} className="rc-toggle" onClick={() => onChange(!on)}>
-      <span>
-        <b>{label}</b>
-        <small>{hint}</small>
-      </span>
-      <i aria-hidden />
-    </button>
+    <>
+      <div className="rc-keys">
+        <Key
+          icon={<HomeIcon />}
+          label="Home app"
+          state={homeState}
+          on={home?.isHome ?? false}
+          onClick={() => {
+            if (home?.supported) void device.openHomeSettings();
+          }}
+        />
+        <Key
+          icon={<MusicIcon />}
+          label="Music info"
+          state={!media.supported ? 'Phone only' : media.access ? 'Allowed' : 'Tap to allow'}
+          on={media.access}
+          onClick={() => {
+            if (media.supported) void device.openMediaAccess();
+          }}
+        />
+        <Key icon={<OfflineIcon />} label="Offline maps" state={packState} onClick={() => setShowPacks((shown) => !shown)} />
+        <Key icon={<GearIcon />} label="Phone settings" state="Wi-Fi, Bluetooth…" onClick={() => void device.openSettings()} />
+      </div>
+      {showPacks ? (
+        packs && packs.length > 0 ? (
+          <ul className="rc-packs">
+            {packs.map((pack) => (
+              <li key={pack.id}>
+                <b>{pack.name}</b>
+                <small>
+                  {pack.kind === 'route' ? 'Trip' : 'Area'} · {bytes(pack.bytes)} · {Math.round((pack.saved / Math.max(1, pack.tiles)) * 100)}%
+                </small>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="rc-note">Maps saved for trips or areas let you ride without signal.</p>
+        )
+      ) : null}
+    </>
   );
 }

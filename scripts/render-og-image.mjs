@@ -22,7 +22,7 @@ const phone = html.match(/<svg\s+id="phone"[\s\S]*?<\/svg>/)?.[0];
 if (!phone) throw new Error('No <svg id="phone"> in site/index.html');
 const fontsLink = html.match(/<link\s+rel="stylesheet"\s+href="https:\/\/fonts\.googleapis\.com[^>]*>/)?.[0] ?? '';
 const styles = readFileSync(join(root, 'site/styles.css'), 'utf8');
-const logo = `data:image/svg+xml;base64,${readFileSync(join(root, 'public/favicon.svg')).toString('base64')}`;
+const logo = `data:image/svg+xml;base64,${readFileSync(join(root, 'site/mark.svg')).toString('base64')}`;
 
 const page = `<!doctype html>
 <html>
@@ -34,50 +34,36 @@ const page = `<!doctype html>
       html, body { width: 1200px; height: 630px; margin: 0; overflow: hidden; }
       .og {
         position: relative;
-        display: grid;
-        grid-template-columns: 1fr 420px;
-        align-items: center;
         width: 1200px;
         height: 630px;
-        padding: 0 0 0 76px;
         overflow: hidden;
-        background:
-          radial-gradient(ellipse 55% 75% at 82% 45%, rgba(240, 160, 32, 0.24), transparent 70%),
-          radial-gradient(ellipse 45% 60% at 0% 100%, rgba(61, 190, 165, 0.16), transparent 70%),
-          #06100c;
+        background: radial-gradient(ellipse 45% 60% at 80% 52%, rgba(223, 254, 69, 0.13), transparent 70%), #000;
       }
-      .og::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: repeating-radial-gradient(circle at 80% 45%, transparent 0 30px, rgba(255, 255, 255, 0.04) 30px 31px);
-        mask-image: radial-gradient(ellipse 60% 80% at 75% 45%, #000 25%, transparent 80%);
-      }
-      .og-copy { position: relative; }
-      .og-brand { display: flex; align-items: center; gap: 16px; font-family: var(--font-display); font-size: 34px; font-weight: 700; }
-      .og-brand img { width: 58px; height: 58px; }
-      .og h1 { margin-top: 30px; font-size: 64px; line-height: 1.02; letter-spacing: -0.015em; }
-      .og-sub { margin-top: 20px; color: var(--text-soft); font-size: 27px; }
-      .og-chips { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
-      .og-chip { padding: 9px 18px; border: 1.5px solid var(--border-strong); border-radius: 999px; color: var(--text-soft); font-size: 20px; font-weight: 600; white-space: nowrap; }
-      .og-chip-accent { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
-      .og-phone { position: relative; height: 630px; }
-      .og .phone { position: absolute; top: 26px; left: 70px; width: 285px; transform: rotate(5deg); }
+      .og-copy { position: absolute; top: 88px; left: 72px; width: 520px; }
+      .og-brand { display: flex; align-items: center; gap: 14px; font-size: 26px; font-weight: 600; letter-spacing: 0.12em; }
+      .og-brand img { width: 46px; height: 46px; }
+      .og h1 { margin-top: 40px; font-size: 52px; line-height: 1.06; letter-spacing: -0.025em; white-space: nowrap; }
+      .og h1 .second { display: block; color: var(--muted); }
+      .og-sub { margin-top: 22px; color: var(--copy); font-size: 24px; line-height: 1.4; }
+      .og-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 34px; }
+      .og-chip { padding: 8px 18px; border: 1.5px solid var(--border-strong); border-radius: 999px; color: var(--copy); font-size: 18px; font-weight: 500; white-space: nowrap; }
+      .og-chip-accent { border-color: var(--lime); background: var(--lime); color: var(--lime-ink); }
+      .og .phone { position: absolute; top: 172px; left: 600px; width: 570px; transform: rotate(-4deg); }
     </style>
   </head>
   <body>
     <div class="og">
       <div class="og-copy">
-        <div class="og-brand"><img src="${logo}" alt="" />TrailCompass</div>
-        <h1>Motorcycle navigation <span class="accent">for India</span></h1>
-        <p class="og-sub">Fuel and food stops planned around your ride.</p>
+        <div class="og-brand"><img src="${logo}" alt="" />RIDECORE</div>
+        <h1>Your bike's dash, <span class="second">on a spare phone.</span></h1>
+        <p class="og-sub">Speed, the next turn and the trip at a glance. Swiped like a watch.</p>
         <div class="og-chips">
           <span class="og-chip">Voice turn-by-turn</span>
-          <span class="og-chip">Bike-friendly routes</span>
+          <span class="og-chip">Ride recorder</span>
           <span class="og-chip og-chip-accent">Free for Android</span>
         </div>
       </div>
-      <div class="og-phone">${phone}</div>
+      ${phone}
     </div>
   </body>
 </html>`;

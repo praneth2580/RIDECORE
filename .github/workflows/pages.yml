@@ -165,21 +165,26 @@ jobs:
         run: |
           # The site serves the APK itself: GitHub's release downloads are slow
           # or stall on many mobile networks; Pages is served through a CDN.
-          if ! gh release view --repo "$GITHUB_REPOSITORY" \
+          # RIDECORE: its releases are pre-releases tagged ridecore-v<version>,
+          # which "the latest release" skips, so the newest one is looked up.
+          tag=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 50 \
+              --json tagName,isDraft,publishedAt \
+              --jq '[.[] | select((.isDraft | not) and (.tagName | startswith("ridecore-v")))]
+                    | sort_by(.publishedAt) | last | .tagName // ""')
+          if [[ -z "$tag" ]] || ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" \
               --json tagName,body,publishedAt,url,assets > "$RUNNER_TEMP/release.json"; then
             echo "No published release yet; download buttons fall back to GitHub."
             exit 0
           fi
-          tag=$(jq -r .tagName "$RUNNER_TEMP/release.json")
           apk=$(jq -r '[.assets[].name | select(test("^[A-Za-z0-9._-]+\\.apk$"))][0] // ""' "$RUNNER_TEMP/release.json")
-          if [[ ! "$tag" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ || -z "$apk" ]]; then
+          if [[ ! "$tag" =~ ^ridecore-v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ || -z "$apk" ]]; then
             echo "::warning::Release $tag has no usable APK; download buttons fall back to GitHub."
             exit 0
           fi
           mkdir -p _site/download
           gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern "$apk" --dir _site/download
           jq --arg apk "$apk" --argjson size "$(stat -c %s "_site/download/$apk")" '{
-              version: (.tagName | ltrimstr("v")),
+              version: (.tagName | ltrimstr("ridecore-v")),
               tag: .tagName,
               apk: ("download/" + $apk),
               apkName: $apk,

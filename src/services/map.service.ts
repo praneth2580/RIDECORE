@@ -200,6 +200,8 @@ export class MapLibreAdapter implements MapAdapter {
   private navZoom: number | null = null;
   private navZoomAt = 0;
   private navZoomSettling = false;
+  /** Zoom by speed while following the dot too, not only while navigating. */
+  private followZoomBySpeed = false;
   /** Swings the camera from where it was to the rider. */
   private cameraBlend: { from: CameraPose; startedAt: number; resetOrientation: boolean } | null =
     null;
@@ -397,6 +399,17 @@ export class MapLibreAdapter implements MapAdapter {
   /** How far a card down the side of the map reaches in; 0 with it along the bottom. */
   setSideInset(pixels: number): void {
     this.sideInset = Math.max(0, pixels);
+  }
+
+  /**
+   * Off the route too, the camera following the rider zooms by speed as navigation
+   * does: street detail when slow, more road when fast. It starts from the zoom shown.
+   */
+  setFollowZoomBySpeed(on: boolean): void {
+    if (this.followZoomBySpeed === on) return;
+    this.followZoomBySpeed = on;
+    if (this.positionMode === 'dot') this.navZoom = null;
+    this.requestFrame();
   }
 
   setFollowCamera(follow: boolean): void {
@@ -708,7 +721,8 @@ export class MapLibreAdapter implements MapAdapter {
       else blending = true;
     }
     map.jumpTo(pose);
-    return blending || (this.positionMode === 'arrow' && this.navZoomSettling);
+    const zoomBySpeed = this.positionMode === 'arrow' || this.followZoomBySpeed;
+    return blending || (zoomBySpeed && this.navZoomSettling);
   }
 
   private cameraTarget(map: MapLibreMap, rider: RiderPose, now: number): CameraPose {
@@ -728,19 +742,20 @@ export class MapLibreAdapter implements MapAdapter {
       };
     }
     const pose = cameraPoseOf(map);
+    const zoom = this.followZoomBySpeed ? this.stepNavZoom(now, pose.zoom) : pose.zoom;
     if (this.cameraBlend?.resetOrientation) {
-      return { center, zoom: pose.zoom, bearing: 0, pitch: 0, padding: NO_PADDING };
+      return { center, zoom, bearing: 0, pitch: 0, padding: NO_PADDING };
     }
-    return { ...pose, center };
+    return { ...pose, center, zoom };
   }
 
-  /** Ease the navigation zoom toward the target for the rider's speed. */
-  private stepNavZoom(now: number): number {
+  /** Ease the navigation zoom toward the target for the rider's speed, from `from` at first. */
+  private stepNavZoom(now: number, from?: number): number {
     const target = navigationZoomForSpeed(this.riderSpeedMps);
     // Capped, so a pause between frames does not snap the zoom.
     const dt = Math.min(100, Math.max(0, now - this.navZoomAt));
     this.navZoomAt = now;
-    const current = this.navZoom ?? target;
+    const current = this.navZoom ?? from ?? target;
     const next = current + (target - current) * (1 - Math.exp(-dt / NAV_ZOOM_EASE_MS));
     this.navZoom = Math.abs(target - next) < 0.01 ? target : next;
     this.navZoomSettling = this.navZoom !== target;
