@@ -1,15 +1,20 @@
 // RIDECORE's version on its APKs, without touching TrailCompass's build.gradle (its
-// versionName line changes with every TrailCompass release, so editing it would conflict).
+// versionName and versionCode lines change with every TrailCompass release, so editing
+// them would conflict). scripts/release.mjs passes both:
 //
-//   ./gradlew assembleDebug --init-script ../ridecore/version.gradle -Pridecore.versionName=0.1.0-alpha.1
+//   ./gradlew assembleDebug --init-script ../ridecore/version.gradle -Pridecore.versionName=1.1.0 -Pridecore.versionCode=1010099
 //
-// Without -Pridecore.versionName the build keeps build.gradle's version.
+// Without them the build keeps build.gradle's. The app compares its versionName with the
+// newest release to offer updates, and Android only installs a versionCode at least as
+// high as the one there, so a release needs both.
 allprojects {
     pluginManager.withPlugin('com.android.application') {
         def name = providers.gradleProperty('ridecore.versionName')
+        def code = providers.gradleProperty('ridecore.versionCode')
         extensions.getByName('androidComponents').onVariants(extensions.getByName('androidComponents').selector().all()) { variant ->
-            if (name.present) {
-                variant.outputs.each { output -> output.versionName.set(name.get()) }
+            variant.outputs.each { output ->
+                if (name.present) output.versionName.set(name.get())
+                if (code.present) output.versionCode.set(code.get() as Integer)
             }
         }
     }

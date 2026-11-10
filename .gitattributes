@@ -20,3 +20,6 @@
 /android/app/src/main/res/mipmap-*/*.png                   merge=ours
 /android/app/src/main/res/drawable*/splash.png             merge=ours
 /android/app/src/main/res/values/ic_launcher_background.xml merge=ours
+
+# RIDECORE's release (ridecore-v* tags, RIDECORE's repo) in place of TrailCompass's.
+/scripts/release.mjs          merge=ours

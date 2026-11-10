@@ -284,17 +284,28 @@ RIDECORE's releases are GitHub releases on praneth2580/RIDECORE, tagged
 alphas were pre-releases; from 1.0.0 they're full releases (an alpha or beta still goes
 out with `--prerelease`). The first five lines of the notes show in the app's update
 prompt, so lead with what riders will notice.
-TrailCompass's `npm run release:*` is not for RIDECORE: it bumps TrailCompass's version
-lines and titles the release "TrailCompass". The APK's version name comes from
-`ridecore/version.gradle`, leaving `build.gradle` alone:
+`scripts/release.mjs` is RIDECORE's own (it replaced TrailCompass's, which bumped
+TrailCompass's version lines, tagged `v<version>` and titled the release "TrailCompass";
+`.gitattributes` keeps RIDECORE's on a merge). From a clean, pushed-or-pushable `main`:
 
 ```bash
-npm run build && npx cap sync android
-cd android && ./gradlew assembleDebug --init-script ../ridecore/version.gradle -Pridecore.versionName=1.0.1
-cp app/build/outputs/apk/debug/app-debug.apk ridecore-1.0.1.apk
-git tag ridecore-v1.0.1 && git push origin main ridecore-v1.0.1
-gh release create ridecore-v1.0.1 ridecore-1.0.1.apk --title "RIDECORE 1.0.1" --notes-file notes.md
+npm run release:minor -- --notes "What riders will notice"   # 1.0.1 → 1.1.0
+npm run release:major -- --notes-file notes.md
+node scripts/release.mjs patch --notes "…"                    # 1.1.0 → 1.1.1
+node scripts/release.mjs minor --pre beta --notes "…"         # 1.2.0-beta.1, a pre-release
+node scripts/release.mjs minor --dry-run                      # just the APK: no tag, push or release
 ```
+
+The version is the newest `ridecore-v*` tag's, bumped; nothing is committed, so
+TrailCompass's `package.json` and `build.gradle` version lines stay TrailCompass's and
+merge cleanly. It builds the APK with `ridecore/version.gradle` setting the version name
+(what the app compares with the newest release to offer an update) and a version code
+from the version (1.1.0 is 1010099; a beta of it 10100xx below that), so each release
+installs over the one before. It then tags `ridecore-v<version>`, pushes `main` and the
+tag, and publishes `ridecore-<version>.apk` as "RIDECORE <version>" on the repo named by
+`origin` (named outright: with `upstream` too, `gh` can't pick one). `gh` signs in with
+`GH_TOKEN`, else the token in `origin`'s URL. Publishing starts `pages.yml`, which puts
+the release on the website and in `latest.json` for the update prompt.
 
 APKs are debug-signed with this machine's debug key, as TrailCompass's are. A phone
 only installs a newer APK over an older one signed with the same key, so build every
