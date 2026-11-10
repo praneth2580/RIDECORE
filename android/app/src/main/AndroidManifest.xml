@@ -37,6 +37,15 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
 
+            <!-- RIDECORE: its handlebar module (an ESP32-S3) plugged in opens RIDECORE, and
+                 "always" in Android's prompt gives it lasting USB access (module/README.md). -->
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+                android:resource="@xml/ridecore_usb_module" />
+
         </activity>
 
         <provider
@@ -75,6 +84,13 @@
             android:foregroundServiceType="location"
             android:stopWithTask="false" />
     </application>
+
+    <!-- RIDECORE: the handlebar module on USB, the phone as host; phones without it still install. -->
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
+    <!-- RIDECORE: the module's buttons answer and end calls, once the rider allows it
+         (Settings → Handlebar module → Calls); asked for only then. -->
+    <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
     <!-- Permissions -->
 

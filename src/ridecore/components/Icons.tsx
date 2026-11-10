@@ -370,3 +370,90 @@ export const BatteryLevelIcon = ({ level, charging }: { level: number; charging:
     {charging ? <path d="m11.8 8.2-2.6 4.3h3.4l-2.4 3.3" stroke="#000" strokeWidth="1.6" strokeLinecap="round" /> : null}
   </svg>
 );
+
+/** The handlebar module, on USB. */
+export const UsbIcon = () => (
+  <Icon>
+    <path d="M12 19V4" />
+    <path d="m9.5 6.5 2.5-2.5 2.5 2.5" />
+    <path d="M12 15.5 7.5 12.5V10" />
+    <circle cx="7.5" cy="8.5" r="1.5" />
+    <path d="M12 13.5 16.5 10.5V8.5" />
+    <rect x="15" y="6" width="3" height="2.5" rx="0.4" />
+    <circle cx="12" cy="20" r="1.5" />
+  </Icon>
+);
+
+/** The wheel sensor. */
+export const WheelIcon = () => (
+  <Icon>
+    <circle cx="12" cy="12" r="8.5" />
+    <circle cx="12" cy="12" r="2" />
+    <path d="M12 3.5V10M12 14v6.5M3.5 12H10M14 12h6.5" />
+  </Icon>
+);
+
+/** Lean: the bike tilted from upright, the angle between. */
+export const LeanIcon = () => (
+  <Icon>
+    <path d="M4 20h16" />
+    <path d="M12 20V6" strokeDasharray="2 2.6" />
+    <path d="m12 20 6-12" />
+    <path d="M12 12.5a7.5 7.5 0 0 1 3.4 0.8" />
+  </Icon>
+);
+
+/** The handlebar's five-way pad, the button in question filled. */
+export const PadIcon = ({ button }: { button: 'up' | 'down' | 'left' | 'right' | 'ok' }) => {
+  const fill = (which: string) => (button === which ? 'currentColor' : 'none');
+  return (
+    <Icon>
+      <circle cx="12" cy="12" r="9.5" />
+      <path d="M12 4.8 14.3 7.6H9.7Z" fill={fill('up')} />
+      <path d="M12 19.2 14.3 16.4H9.7Z" fill={fill('down')} />
+      <path d="M4.8 12 7.6 9.7V14.3Z" fill={fill('left')} />
+      <path d="M19.2 12 16.4 9.7V14.3Z" fill={fill('right')} />
+      <circle cx="12" cy="12" r="2.3" fill={fill('ok')} />
+    </Icon>
+  );
+};
+
+/** A phone call. */
+export const CallIcon = () => (
+  <Icon>
+    <path d="M6.6 3.5h3l1.5 4-2 1.3a11 11 0 0 0 6.1 6.1l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.6 5.7a2 2 0 0 1 2-2.2Z" />
+  </Icon>
+);
+
+/** Copy: two sheets. */
+export const CopyIcon = () => (
+  <Icon>
+    <rect x="8.5" y="8.5" width="11" height="11" rx="2" />
+    <path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2" />
+  </Icon>
+);
+
+/** Send on: out of the box. */
+export const ShareIcon = () => (
+  <Icon>
+    <path d="M12 15V4" />
+    <path d="m8 7.5 4-4 4 4" />
+    <path d="M6.5 11H5.5a1.5 1.5 0 0 0-1.5 1.5v6A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-6a1.5 1.5 0 0 0-1.5-1.5h-1" />
+  </Icon>
+);
+
+/** A board: a chip on its pins. */
+export const ChipIcon = () => (
+  <Icon>
+    <rect x="6.5" y="6.5" width="11" height="11" rx="1.6" />
+    <path d="M9.5 3.5v3M14.5 3.5v3M9.5 17.5v3M14.5 17.5v3M3.5 9.5h3M3.5 14.5h3M17.5 9.5h3M17.5 14.5h3" />
+  </Icon>
+);
+
+/** Back to how it came. */
+export const ResetIcon = () => (
+  <Icon>
+    <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" />
+    <path d="M4.5 4.5v4h4" />
+  </Icon>
+);

@@ -1,0 +1,17 @@
+// RIDECORE's own additions to the Android app's build, applied from the end of
+// android/app/build.gradle (one line), so TrailCompass's build files stay as they are.
+
+repositories {
+    // Only for the USB serial library below: nothing else is looked up there.
+    maven {
+        url 'https://jitpack.io'
+        content { includeGroup 'com.github.mik3y' }
+    }
+}
+
+dependencies {
+    // USB serial for the handlebar module (module/README.md): CDC boards (ESP32-S3 and C3,
+    // Pico, Leonardo and Pro Micro, Uno R3 and R4), CH340/CH341 (Nano and Uno clones, ESP32
+    // DevKits), CP210x (ESP32 DevKits) and FTDI. MIT licence.
+    implementation 'com.github.mik3y:usb-serial-for-android:3.8.1'
+}

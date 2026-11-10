@@ -20,7 +20,9 @@ import {
 import { device, loadKeepScreenOn, saveKeepScreenOn, type Layout, type PhoneApp } from '../device';
 import { pickNote, usePhoneApps } from '../apps';
 import { loadDashShows, saveDashShows, type DashShows } from '../dash';
-import { followMedia, useNowPlaying } from '../media';
+import { followMedia, skip, togglePlay, useNowPlaying } from '../media';
+import { followModule, onModuleAction, resetMaxLean, setGpsSpeed, useWheelKmh, type ModuleAction } from '../module';
+import { requestNextFace } from '../faces';
 import { followCutout } from '../cutout';
 import { networkMark, useMediaQuery, usePhoneStatus } from '../status';
 import { useWeather } from '../weather';
@@ -135,6 +137,17 @@ export function App() {
   // The phone's music, followed for as long as RIDECORE runs.
   useEffect(() => followMedia(), []);
 
+  // The handlebar module on USB: its buttons, wheel speed and lean (src/ridecore/module).
+  useEffect(() => followModule(), []);
+  // Its lean needs a speed: the wheel's, else the phone's GPS.
+  const gpsMps = fix?.speedMps ?? null;
+  useEffect(() => setGpsSpeed(gpsMps), [gpsMps]);
+  // The most lean counts from the start of each ride.
+  const recording = Boolean(core.ride);
+  useEffect(() => {
+    if (recording) resetMaxLean();
+  }, [recording]);
+
   // Full screen: the page keeps its words clear of the camera's cut-out as the phone turns.
   useEffect(() => followCutout(), []);
 
@@ -209,13 +222,69 @@ export function App() {
       goRef.current?.clear();
       showDash();
     };
+    // The handlebar module's buttons (module/README.md), each doing what the rider set
+    // it to (Settings → Handlebar module → Buttons). The phone has already done its own
+    // (volume, calls): those only come here to say what got in the way.
+    actionRef.current = ({ action, done, problem }) => {
+      if (problem) {
+        setToast({ message: problem, tone: 'error' });
+        return;
+      }
+      if (done) return;
+      switch (action) {
+        // Where a swipe wouldn't go (the map has the screen, a search is open), nor do these.
+        case 'screen-left':
+        case 'screen-right':
+          if (hold == null) pagerRef.current?.show(Math.min(RIDES, Math.max(MUSIC, page + (action === 'screen-left' ? -1 : 1))));
+          break;
+        case 'screen-up':
+        case 'screen-down':
+          if (mode === 'dash' && page === DASH) {
+            columnRef.current?.show(Math.min(ALL_APPS_ROW, Math.max(0, row + (action === 'screen-up' ? -1 : 1))));
+          }
+          break;
+        case 'dash':
+          homeRef.current();
+          break;
+        case 'back':
+          backRef.current();
+          break;
+        case 'next-face':
+          requestNextFace();
+          break;
+        case 'voice':
+          voiceGuidance.setEnabled(!voiceOn);
+          setVoiceOn(!voiceOn);
+          setToast({ message: voiceOn ? 'Voice off' : 'Voice on', tone: 'info' });
+          break;
+        case 'play-pause':
+          togglePlay(media);
+          break;
+        case 'next-track':
+        case 'previous-track':
+          skip(media, action === 'next-track' ? 'next' : 'previous');
+          break;
+        case 'volume-up':
+        case 'volume-down':
+        case 'answer-call':
+        case 'end-call':
+          // The phone does these; here, a browser with the simulator.
+          setToast({ message: 'Volume and calls work on the phone', tone: 'info' });
+          break;
+        case 'none':
+          break;
+      }
+    };
   });
+  const actionRef = useRef<(event: ModuleAction) => void>(() => {});
   useEffect(() => {
     const back = CapacitorApp.addListener('backButton', () => backRef.current());
     const home = device.addListener('home', () => homeRef.current());
+    const press = onModuleAction((event) => actionRef.current(event));
     return () => {
       void back.then((l) => l.remove());
       void home.then((l) => l.remove());
+      press();
     };
   }, []);
 
@@ -392,7 +461,7 @@ export function App() {
             >
               {dash && shows.speed ? (
                 <div className="rc-speed">
-                  <SpeedDial speed={speedKmh(fix, core.now)} />
+                  <DashSpeed gpsKmh={speedKmh(fix, core.now)} />
                   <StatusCorners place="speed" {...marks} />
                 </div>
               ) : null}
@@ -477,4 +546,14 @@ export function App() {
       ) : null}
     </div>
   );
+}
+
+/**
+ * The speedometer: the handlebar module's wheel sensor when it has one (instant, and
+ * on through tunnels), else GPS. On its own so the wheel's ten readings a second
+ * redraw only the dial.
+ */
+function DashSpeed({ gpsKmh }: { gpsKmh: number | null }) {
+  const wheelKmh = useWheelKmh();
+  return <SpeedDial speed={wheelKmh ?? gpsKmh} />;
 }

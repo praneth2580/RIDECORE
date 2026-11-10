@@ -35,6 +35,7 @@ import {
   ZoomIcon,
 } from '../components/Icons';
 import { usePhoneMedia } from '../media';
+import { ModuleSettings } from '../components/ModuleSettings';
 import { Key } from '../components/Key';
 import { bytes } from '../format';
 import { LayoutPicture } from './ChooseLayout';
@@ -143,6 +144,9 @@ export function SettingsPage({ layout, onLayout, keepOn, onKeepOn, voiceOn, onVo
           </button>
         ))}
       </div>
+
+      <h3 className="rc-section">Handlebar module</h3>
+      <ModuleSettings />
 
       <h3 className="rc-section">Phone</h3>
       <PhoneKeys />

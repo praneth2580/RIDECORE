@@ -5,7 +5,8 @@ import { canSkip, skip, togglePlay, type NowPlaying } from '../media';
 import type { Weather } from '../weather';
 import { useDashFace, type Face } from '../faces';
 import { clock, day, timer } from '../format';
-import { MusicIcon, NextIcon, PauseIcon, PlayIcon, PreviousIcon, RadioIcon, WeatherIcon } from './Icons';
+import { formatLean, useLean, type LeanReading } from '../module';
+import { LeanIcon, MusicIcon, NextIcon, PauseIcon, PlayIcon, PreviousIcon, RadioIcon, WeatherIcon } from './Icons';
 
 interface Readout {
   label: string;
@@ -14,6 +15,8 @@ interface Readout {
   /** 0–1 along the trip, or null for no scale. */
   progress: number | null;
   icon?: ReactNode;
+  /** The lean, degrees: a line tilted that far over a level one. */
+  tilt?: number;
 }
 
 interface TripReadoutProps {
@@ -23,8 +26,8 @@ interface TripReadoutProps {
   weather: Weather | null;
 }
 
-/** The trip, the ride, the weather or the time, as a face of the dial. */
-function readout(face: Exclude<Face, 'music'>, { nav, ride, now }: RideCoreState, weather: Weather | null): Readout {
+/** The trip, the ride, the lean, the weather or the time, as a face of the dial. */
+function readout(face: Exclude<Face, 'music'>, { nav, ride, now }: RideCoreState, weather: Weather | null, lean: LeanReading | null): Readout {
   if (face === 'trip') {
     const seconds = nav.remainingDurationSeconds ?? 0;
     const remaining = nav.remainingDistanceMeters ?? 0;
@@ -44,6 +47,16 @@ function readout(face: Exclude<Face, 'music'>, { nav, ride, now }: RideCoreState
       progress: null,
     };
   }
+  if (face === 'lean' && lean) {
+    return {
+      label: 'Lean',
+      value: formatLean(lean.deg),
+      detail: `Most L ${Math.round(lean.maxLeft)}° · R ${Math.round(lean.maxRight)}°`,
+      progress: null,
+      icon: <LeanIcon />,
+      tilt: lean.deg,
+    };
+  }
   if (face === 'weather' && weather) {
     return {
       label: weather.label,
@@ -58,24 +71,27 @@ function readout(face: Exclude<Face, 'music'>, { nav, ride, now }: RideCoreState
 
 /**
  * The dash's right dial in landscape, a line under the road in portrait (ridecore.css):
- * one face at a time, the trip, the ride, what plays, the weather or the time (faces.ts).
+ * one face at a time, the trip, the ride, what plays, the lean, the weather or the time
+ * (faces.ts).
  * A tap steps to the next, its dots showing which; on the music face, its keys play,
  * pause and skip instead.
  */
 export function TripReadout({ core, media, weather }: TripReadoutProps) {
   const { nav, ride } = core;
+  const lean = useLean();
   const { face, available, next } = useDashFace({
     trip: nav.status === 'navigating' || nav.status === 'rerouting' || nav.status === 'paused',
     ride: Boolean(ride),
     music: Boolean(media),
     musicPlaying: Boolean(media && (media.playing || media.loading)),
+    lean: Boolean(lean),
     weather: Boolean(weather),
   });
   const steps = available.length > 1;
   const music = face === 'music' && media ? media : null;
   return (
     <div className="rc-trip" data-kind={face} data-steps={steps ? 'true' : undefined} onClick={steps ? next : undefined}>
-      {music ? <MusicFace media={music} /> : <ReadoutFace {...readout(face === 'music' ? 'clock' : face, core, weather)} />}
+      {music ? <MusicFace media={music} /> : <ReadoutFace {...readout(face === 'music' ? 'clock' : face, core, weather, lean)} />}
       {steps ? (
         <ol className="rc-trip-dots" aria-hidden>
           {available.map((one) => (
@@ -87,9 +103,14 @@ export function TripReadout({ core, media, weather }: TripReadoutProps) {
   );
 }
 
-function ReadoutFace({ label, value, detail, progress, icon }: Readout) {
+function ReadoutFace({ label, value, detail, progress, icon, tilt }: Readout) {
   return (
     <>
+      {tilt != null ? (
+        <span className="rc-trip-tilt" style={{ ['--tilt' as string]: `${tilt}deg` }} aria-hidden>
+          <i />
+        </span>
+      ) : null}
       <span className="rc-trip-label">
         {icon ? <i className="rc-trip-icon">{icon}</i> : null}
         {label}

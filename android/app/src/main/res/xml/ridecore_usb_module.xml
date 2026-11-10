@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- RIDECORE's handlebar module (module/README.md): plugged in, Android offers to open
+     RIDECORE for it. The makers of the boards it supports, as RideCoreModulePlugin.MAKERS. -->
+<resources>
+    <usb-device vendor-id="12346" /> <!-- 0x303A Espressif: ESP32-S3 and C3 on their own USB -->
+    <usb-device vendor-id="9025" />  <!-- 0x2341 Arduino: Uno, Mega, Leonardo, Micro, Uno R4 -->
+    <usb-device vendor-id="10755" /> <!-- 0x2A03 arduino.org -->
+    <usb-device vendor-id="6991" />  <!-- 0x1B4F SparkFun: Pro Micro -->
+    <usb-device vendor-id="11914" /> <!-- 0x2E8A Raspberry Pi: Pico -->
+    <usb-device vendor-id="9114" />  <!-- 0x239A Adafruit -->
+    <usb-device vendor-id="6790" />  <!-- 0x1A86 WCH CH340: Nano and Uno clones, ESP32 DevKits -->
+    <usb-device vendor-id="4292" />  <!-- 0x10C4 Silicon Labs CP210x: ESP32 DevKits -->
+    <usb-device vendor-id="1027" />  <!-- 0x0403 FTDI: older Nanos -->
+</resources>

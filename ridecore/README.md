@@ -64,7 +64,14 @@ as on Android. Left and right, from the dash:
    the screen and fades into the black at its edges (in landscape it runs behind the two
    dials, fading out under them). It's a display that always follows the rider and zooms
    with speed; swipes go through it, and a tap gives it the whole screen to look around
-   (one close chip). "Arrived" is tapped to finish. The phone's state sits in the room the
+   (one close chip). "Arrived" is tapped to finish. Under the turn, while on the route
+   (not while a new one is found): at a flyover or underpass, a lime side view of the
+   fork with which road to be on ("Take flyover", "Go below flyover", `structureSign`),
+   and a traffic light within 400 m ("Signal in 180 m", "Signal at the turn",
+   `nav.signalAhead`); both drawn in `components/RoadSigns.tsx`. The Trip screen's turns
+   carry the same side view, and the light on a turn with a signal at its junction
+   (`turns.ts`). The map marks flyovers, tunnels and signals itself, in RIDECORE's
+   colours (`map-theme.ts`). The phone's state sits in the room the
    round dials leave in the corners (`components/StatusCorners.tsx`): signal bars with a
    SIM (or Wi-Fi, airplane mode, "Offline"), GPS, a connected headset, the battery; a
    word only when something's wrong. Away from the dash the top line carries them, as
@@ -177,6 +184,23 @@ RIDECORE is made for a phone kept for it alone, as that phone's home screen.
   signal and battery. From Android 15 the page runs under the camera's cut-out, so the
   plugin reports its size (`getCutout`, the `cutout` event) and `cutout.ts` keeps the
   page's edges clear of it.
+- **Handlebar module.** A board on USB (ESP32-S3, ESP32-C3, ESP32, Uno, Nano, Mega,
+  Leonardo/Pro Micro or Pico) with five handlebar buttons, a wheel speed sensor and an
+  IMU, the phone charging through the same powered USB-C hub
+  ([`module/README.md`](../module/README.md): boards, wiring, the sketch, the protocol).
+  `RideCoreModulePlugin` opens it with usb-serial-for-android (`RideCoreUsbLink.java`;
+  the library comes in through `ridecore/android.gradle`) and hands its lines to
+  `src/ridecore/module/`. The buttons are read natively (`RideCoreButtons.java`) and do
+  what the rider set each tap and hold to (`buttonmap.ts`): screens, music, volume,
+  answering and ending calls ("Calls on OK" answers a ringing call), the dial, voice. The
+  phone does calls, volume, and music behind another app itself; the page does the
+  rest. The wheel drives the speedometer, and the IMU gives the dial's lean view.
+  Settings → Handlebar module has the module, its wheel and Level lean; Handlebar
+  buttons; and Build one: per board, the wiring drawn (`WiringDiagram.tsx`), its pins,
+  the Arduino IDE steps, and the sketch to copy or send (`ModuleSettings.tsx`;
+  `boards.test.ts` keeps the guide's pins and the sketch's the same). In a development
+  build, `?module` in the address runs a simulated one, the keyboard's arrows and Enter
+  as its buttons.
 - **Screen on.** On all the time unless Settings → Screen on is set to Navigating.
 - **The way out.** Settings → Phone settings opens the phone's own settings (Wi-Fi,
   Bluetooth, and Apps → Default apps → Home app to give the home screen back).
@@ -323,12 +347,20 @@ Keep this list short and current. These are the only places a merge can conflict
   Only the ID Android and the Play Store see changed. The Java code keeps TrailCompass's
   `com.praneth2580.trailcompass` package (`namespace` in `build.gradle`) so its files merge
   as they are; any new Java file TrailCompass adds goes in that same package.
-- `MainActivity.java`: one line registering `RideCoreDevicePlugin`, at the top of `onCreate`.
+- `MainActivity.java`: two lines registering `RideCoreDevicePlugin` and `RideCoreModulePlugin`,
+  at the top of `onCreate`.
+- `android/app/build.gradle`: one line at the end applying `ridecore/android.gradle`
+  (RIDECORE's own: the USB serial library, from JitPack, that group only).
 - `AndroidManifest.xml`: a second intent filter on `MainActivity` (HOME, DEFAULT), so
   RIDECORE can be the home screen; a `<queries>` entry for launcher activities, so it
   can list the phone's apps (Android 11 and later hide them otherwise); and the
   `RideCoreMediaListener` service, so the rider can give RIDECORE notification access to
-  see what the phone plays. TrailCompass's launcher filter is untouched.
+  see what the phone plays; a `USB_DEVICE_ATTACHED` intent filter on `MainActivity`
+  (with `res/xml/ridecore_usb_module.xml`, RIDECORE's own file), an optional
+  `android.hardware.usb.host` feature, and the `ANSWER_PHONE_CALLS` and
+  `READ_PHONE_STATE` permissions (asked for only when the rider sets a button to calls),
+  for the handlebar module. TrailCompass's launcher
+  filter is untouched.
 - `src/services/ride-log.service.ts`: a fix, worth sending upstream. `discard()` finished
   the recorder, the recorder said "finished", and that was taken for a ride finished from
   the notification, so a discarded ride was saved anyway (TrailCompass's own Discard too).

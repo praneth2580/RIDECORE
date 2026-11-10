@@ -19,7 +19,15 @@ import { getZoomMultiplier, setZoomMultiplier } from './overrides/services/nav-d
 export { MapView } from '../components/MapView';
 export { useKeepAwake } from '../hooks/useKeepAwake';
 export { offlineRoutingAdapter, type OfflineEngineStatus } from '../routing/offline-adapter';
-export { maneuverKind, formatManeuverDistance, type ManeuverKind } from '../routing/turn-instructions';
+export {
+  maneuverKind,
+  formatManeuverDistance,
+  signalWarningLabel,
+  structureSign,
+  type ManeuverKind,
+  type SignalAhead,
+  type StructureSign,
+} from '../routing/turn-instructions';
 export { formatArrivalTime, formatSavedAt } from '../routing/route-naming';
 export { backgroundPlanning } from '../services/background-planning.service';
 export { checkForPoiUpdate } from '../services/poi-data.service';
@@ -35,7 +43,7 @@ export { createTripStop } from '../types/trip-stop';
 export { mapTheme } from '../theme/map-theme';
 export type { RideRecord } from '../database/ride-repository';
 export type { TripPlannerState } from '../services/trip-planner.service';
-export type { Coordinate, TurnInstruction } from '../routing/routing-adapter';
+export type { Coordinate, RouteSignal, TurnInstruction } from '../routing/routing-adapter';
 export { ROUTING_PROFILES, type RoutingProfileId };
 export type { CompassReading, GpsFix, NavigationState } from '../types/navigation';
 export type { PlaceHit, TripStop } from '../types/trip-stop';

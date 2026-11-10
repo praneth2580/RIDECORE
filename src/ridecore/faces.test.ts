@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { availableFaces, nextFace, shownFace, takeover, type FaceSignals } from './faces';
 
-const none: FaceSignals = { trip: false, ride: false, music: false, musicPlaying: false, weather: false };
+const none: FaceSignals = { trip: false, ride: false, music: false, musicPlaying: false, lean: false, weather: false };
 const signals = (on: Partial<FaceSignals>): FaceSignals => ({ ...none, ...on });
 
 describe('the dash dial faces', () => {
   it('always has the time, and the rest in order when there', () => {
     expect(availableFaces(none)).toEqual(['clock']);
     expect(availableFaces(signals({ weather: true, music: true, trip: true }))).toEqual(['trip', 'music', 'weather', 'clock']);
+    expect(availableFaces(signals({ lean: true, music: true }))).toEqual(['music', 'lean', 'clock']);
   });
 
   it('shows the face picked while it is there, else the first', () => {
@@ -43,5 +44,7 @@ describe('the dash dial faces', () => {
     // Paused, or the weather coming in, doesn't take the dial.
     expect(takeover(playing, signals({ music: true, weather: true }))).toBeNull();
     expect(takeover(none, signals({ weather: true }))).toBeNull();
+    // Plugging in the module offers the lean, but doesn't take the dial.
+    expect(takeover(none, signals({ lean: true }))).toBeNull();
   });
 });

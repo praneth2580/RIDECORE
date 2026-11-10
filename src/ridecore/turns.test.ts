@@ -27,6 +27,21 @@ describe('upcomingTurns', () => {
     expect(upcomingTurns(route, elsewhere, 60)).toEqual([{ instruction: elsewhere, distanceMeters: 60 }]);
   });
 
+  it('marks a turn with a traffic signal at its junction, not the arrival', () => {
+    // The turns are 400 m, 1600 m and 1900 m along.
+    const signals = [
+      { coordinate: [0, 0] as [number, number], alongMeters: 1570 },
+      { coordinate: [0, 0] as [number, number], alongMeters: 1000 },
+      { coordinate: [0, 0] as [number, number], alongMeters: 1895 },
+    ];
+    const turns = upcomingTurns(route, route[1], 150, 60, signals);
+    expect(turns.map((turn) => [turn.instruction.text, Boolean(turn.signal)])).toEqual([
+      ['Turn left', false],
+      ['Turn right', true],
+      ['Arrive at destination', false],
+    ]);
+  });
+
   it('is empty with nothing ahead', () => {
     expect(upcomingTurns(route, undefined, 100)).toEqual([]);
     expect(upcomingTurns(route, route[1], undefined)).toEqual([]);

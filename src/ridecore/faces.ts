@@ -1,13 +1,14 @@
 /**
  * The dash's right dial (a line under the road in portrait) shows one face at a time:
- * the trip, the ride, what plays, the weather, or the time. A tap steps to the next
+ * the trip, the ride, what plays, the lean (with the handlebar module's IMU), the
+ * weather, or the time. A tap steps to the next
  * face there is; the one picked stays. Something starting shows itself: a trip always,
  * a ride or music unless a trip is under way. A face that goes (the music stopped)
  * hands over to the first there is, in this order.
  */
 import { useEffect, useRef, useState } from 'react';
 
-export const FACES = ['trip', 'ride', 'music', 'weather', 'clock'] as const;
+export const FACES = ['trip', 'ride', 'music', 'lean', 'weather', 'clock'] as const;
 export type Face = (typeof FACES)[number];
 
 const FACE_KEY = 'ridecore.dashFace';
@@ -22,6 +23,8 @@ export interface FaceSignals {
   music: boolean;
   /** It plays, or the radio is tuning in. */
   musicPlaying: boolean;
+  /** The module's IMU sending. */
+  lean: boolean;
   weather: boolean;
 }
 
@@ -67,6 +70,13 @@ function savePicked(face: Face): void {
   }
 }
 
+const stepListeners = new Set<() => void>();
+
+/** Steps the dial to its next face, as a tap on it does: for a handlebar button. */
+export function requestNextFace(): void {
+  for (const listener of stepListeners) listener();
+}
+
 /** The face to show, the faces there are, and a tap's step to the next. */
 export function useDashFace(signals: FaceSignals): { face: Face; available: Face[]; next: () => void } {
   const [picked, setPicked] = useState(loadPicked);
@@ -74,22 +84,35 @@ export function useDashFace(signals: FaceSignals): { face: Face; available: Face
   const available = availableFaces(signals);
   const face = shownFace(available, picked);
 
-  const { trip, ride, music, musicPlaying, weather } = signals;
+  const { trip, ride, music, musicPlaying, lean, weather } = signals;
   useEffect(() => {
-    const now = { trip, ride, music, musicPlaying, weather };
+    const now = { trip, ride, music, musicPlaying, lean, weather };
     const started = takeover(before.current, now);
     before.current = now;
     if (started) {
       savePicked(started);
       setPicked(started);
     }
-  }, [trip, ride, music, musicPlaying, weather]);
+  }, [trip, ride, music, musicPlaying, lean, weather]);
 
   const next = () => {
     const to = nextFace(available, face);
     savePicked(to);
     setPicked(to);
   };
+
+  // A handlebar button asking for the next face.
+  const nextRef = useRef(next);
+  useEffect(() => {
+    nextRef.current = next;
+  });
+  useEffect(() => {
+    const step = () => nextRef.current();
+    stepListeners.add(step);
+    return () => {
+      stepListeners.delete(step);
+    };
+  }, []);
 
   return { face, available, next };
 }

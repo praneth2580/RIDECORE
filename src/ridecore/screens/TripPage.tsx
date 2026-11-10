@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { formatArrivalTime, formatDuration, formatKm, formatManeuverDistance, maneuverKind, navigationService } from '../engine';
+import { formatArrivalTime, formatDuration, formatKm, formatManeuverDistance, maneuverKind, navigationService, structureSign } from '../engine';
 import type { RideCoreState } from '../app/useRideCore';
 import { CheckIcon, EndIcon, VoiceIcon, VoiceOffIcon } from '../components/Icons';
 import { ManeuverGlyph } from '../components/ManeuverGlyph';
+import { SignalGlyph, StructureGlyph } from '../components/RoadSigns';
 import { Page } from '../components/Page';
 import { upcomingTurns } from '../turns';
 
@@ -37,7 +38,9 @@ export function TripPage({ core, title, voiceOn, onVoice, onEnd }: TripPageProps
 
   const seconds = nav.remainingDurationSeconds ?? 0;
   const route = navigationService.getActiveCalculatedRoute();
-  const turns = arrived ? [] : upcomingTurns(route?.instructions ?? [], nav.currentInstruction, nav.distanceToNextManeuverMeters, TURNS_SHOWN);
+  const turns = arrived
+    ? []
+    : upcomingTurns(route?.instructions ?? [], nav.currentInstruction, nav.distanceToNextManeuverMeters, TURNS_SHOWN, route?.signals);
 
   // Ending mid-ride takes two taps, without a dialog in the way.
   const end = () => {
@@ -97,15 +100,25 @@ export function TripPage({ core, title, voiceOn, onVoice, onEnd }: TripPageProps
 
         {turns.length > 0 ? (
           <ol className="rc-turns" aria-label="Turns ahead">
-            {turns.map(({ instruction, distanceMeters }, index) => (
-              <li key={index} className="rc-turn">
-                <ManeuverGlyph kind={maneuverKind(instruction)} />
-                <span className="rc-row-text">
-                  <b>{formatManeuverDistance(distanceMeters)}</b>
-                  <small>{instruction.text}</small>
-                </span>
-              </li>
-            ))}
+            {turns.map(({ instruction, distanceMeters, signal }, index) => {
+              const structure = structureSign(instruction);
+              return (
+                <li key={index} className="rc-turn">
+                  <ManeuverGlyph kind={maneuverKind(instruction)} />
+                  <span className="rc-row-text">
+                    <b>{formatManeuverDistance(distanceMeters)}</b>
+                    <small>{instruction.text}</small>
+                  </span>
+                  {/* At a flyover or underpass, which road; a signal at the junction. */}
+                  {structure || signal ? (
+                    <span className="rc-turn-signs" aria-label={[structure?.label, signal ? 'Signal at the turn' : null].filter(Boolean).join(', ')}>
+                      {structure ? <StructureGlyph sign={structure} /> : null}
+                      {signal ? <SignalGlyph /> : null}
+                    </span>
+                  ) : null}
+                </li>
+              );
+            })}
           </ol>
         ) : null}
       </div>

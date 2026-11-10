@@ -43,6 +43,8 @@ dependencies {
 }
 
 apply from: 'capacitor.build.gradle'
+// RIDECORE: its USB serial library for the handlebar module (ridecore/android.gradle).
+apply from: '../../ridecore/android.gradle'
 
 try {
     def servicesJSON = file('google-services.json')

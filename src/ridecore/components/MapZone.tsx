@@ -5,11 +5,14 @@ import {
   mapService,
   MapView,
   navigationService,
+  signalWarningLabel,
+  structureSign,
   type RideRecord,
 } from '../engine';
 import type { RideCoreState } from '../app/useRideCore';
 import { CloseIcon, LocateIcon, SearchIcon } from './Icons';
 import { ManeuverGlyph } from './ManeuverGlyph';
+import { SignalGlyph, StructureGlyph } from './RoadSigns';
 
 /**
  * dash: the map across the middle of the dash, edges faded into the black, a display
@@ -143,12 +146,34 @@ export function MapZone(props: MapZoneProps) {
     banner = { glyph: 'arrive', title: 'Arrived', text: `${trip.destination?.name ? `${trip.destination.name} · ` : ''}tap to finish` };
   }
 
+  // Under the turn, while riding the route: up onto the flyover or along the road below
+  // it, and a traffic signal coming up. Not while a new route is found: that turn may go.
+  const following = underway && nav.status === 'navigating';
+  const structure = following ? structureSign(instruction) : null;
+  const signal = following ? nav.signalAhead : undefined;
+
   const bannerBody = banner ? (
     <>
       {banner.glyph ? <ManeuverGlyph kind={banner.glyph} /> : null}
       <div className="rc-banner-copy">
         <p className="rc-banner-title">{banner.title}</p>
         {banner.text ? <p className="rc-banner-text">{banner.text}</p> : null}
+        {structure || signal ? (
+          <p className="rc-banner-signs">
+            {structure ? (
+              <span className="rc-sign" data-kind="structure" data-action={structure.action}>
+                <StructureGlyph sign={structure} />
+                <span>{structure.label}</span>
+              </span>
+            ) : null}
+            {signal ? (
+              <span className="rc-sign" data-kind="signal" data-at-turn={signal.atManeuver ? 'true' : undefined}>
+                <SignalGlyph />
+                <span>{signalWarningLabel(signal)}</span>
+              </span>
+            ) : null}
+          </p>
+        ) : null}
       </div>
     </>
   ) : null;

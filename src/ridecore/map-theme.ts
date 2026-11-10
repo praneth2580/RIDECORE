@@ -34,6 +34,17 @@ export const RIDECORE_MAP_THEME: MapThemeOverrides = {
     alternatives: ['#20a1fa', '#716cf7', '#a3a4a9'],
   },
   ride: { recording: '#ff453a', past: '#716cf7' },
+  // Flyovers edged in the dash's grey, not the dark preset's green-grey.
+  structures: {
+    bridgeCasing: '#8e8f94',
+    bridgeShadow: 'rgba(0, 0, 0, 0.6)',
+    routeBridge: '#e8e8ea',
+    routeTunnel: '#ffffff',
+    label: '#c8cad0',
+    labelHalo: '#060708',
+  },
+  // The same traffic light as the turn banner's (ridecore.css).
+  signals: { housing: '#1b1c1f', outline: '#e8e8ea', red: '#ff453a', amber: '#ffb020', green: '#61c04f' },
   traffic: { casing: '#000000' },
   places: { fuel: '#20a1fa', food: '#e07a5f', icon: '#ffffff', label: '#c8cad0', labelHalo: '#060708' },
   markers: {
