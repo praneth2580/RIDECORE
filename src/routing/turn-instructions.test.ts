@@ -3,6 +3,8 @@ import type { TurnInstruction } from './routing-adapter';
 import {
   formatManeuverDistance,
   maneuverKind,
+  signalAhead,
+  signalWarningLabel,
   structureSign,
   selectNextInstruction,
   selectNextInstructionIndex,
@@ -122,5 +124,39 @@ describe('structureSign', () => {
     expect(structureSign(at({ kind: 'ferry', action: 'take', term: 'ferry' }))).toBeNull();
     expect(structureSign(at({ kind: 'bridge', action: 'constructor', term: 'flyover' }))).toBeNull();
     expect(structureSign(at({ kind: 'bridge', action: 'take' }))?.label).toBe('Take bridge');
+  });
+});
+
+describe('signalAhead', () => {
+  const signals = [
+    { coordinate: [0, 0] as [number, number], alongMeters: 1_000 },
+    { coordinate: [0, 0] as [number, number], alongMeters: 1_600 },
+  ];
+
+  it('warns of the next signal once it is within 400 m', () => {
+    expect(signalAhead(signals, 500)).toBeNull();
+    expect(signalAhead(signals, 650)).toEqual({ distanceMeters: 350, atManeuver: false });
+    expect(signalAhead(signals, 1_000)).toEqual({ distanceMeters: 0, atManeuver: false });
+  });
+
+  it('keeps it while waiting at the stop line, then moves on', () => {
+    expect(signalAhead(signals, 1_005)?.distanceMeters).toBe(0);
+    expect(signalAhead(signals, 1_010)).toBeNull();
+    expect(signalAhead(signals, 1_300)).toEqual({ distanceMeters: 300, atManeuver: false });
+    expect(signalAhead(signals, 1_700)).toBeNull();
+    expect(signalAhead(undefined, 0)).toBeNull();
+  });
+
+  it('knows a signal at the next turn', () => {
+    expect(signalAhead(signals, 800, 1_020)?.atManeuver).toBe(true);
+    // Across a wide junction, the turn 40 m past its signal.
+    expect(signalAhead(signals, 800, 1_040)?.atManeuver).toBe(true);
+    expect(signalAhead(signals, 800, 1_200)?.atManeuver).toBe(false);
+  });
+
+  it('labels it for the banner', () => {
+    expect(signalWarningLabel({ distanceMeters: 183, atManeuver: false })).toBe('Signal in 180 m');
+    expect(signalWarningLabel({ distanceMeters: 3, atManeuver: false })).toBe('Signal here');
+    expect(signalWarningLabel({ distanceMeters: 120, atManeuver: true })).toBe('Signal at the turn');
   });
 });

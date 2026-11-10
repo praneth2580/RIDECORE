@@ -1,12 +1,13 @@
 import type {
   CalculatedRoute,
   Coordinate,
+  RouteSignal,
   RouteStructure,
   TurnInstruction,
 } from '../routing/routing-adapter';
 import type { RoutingProfileId } from '../routing/routing-profiles';
 
-export type { Coordinate, RouteStructure, TurnInstruction };
+export type { Coordinate, RouteSignal, RouteStructure, TurnInstruction };
 
 /**
  * Names for a trip's destination and stops (in `waypoints` order), so a
@@ -33,6 +34,8 @@ export interface SavedRoute {
   instructions: TurnInstruction[];
   /** Bridges and tunnels on the route; absent on trips saved before they were kept. */
   structures?: RouteStructure[];
+  /** Traffic signals on the route; absent on trips saved before they were kept. */
+  signals?: RouteSignal[];
   profile?: RoutingProfileId;
   label?: string;
   /** Absent on trips saved before names were kept. */
@@ -85,6 +88,7 @@ export function calculatedToSavedRoute(
     durationSeconds: route.durationSeconds,
     instructions: route.instructions,
     ...(route.structures?.length ? { structures: route.structures } : {}),
+    ...(route.signals?.length ? { signals: route.signals } : {}),
     profile: route.profile,
     label: route.label,
     ...(extras?.places ? { places: extras.places } : {}),
@@ -99,6 +103,7 @@ export function savedToCalculatedRoute(saved: SavedRoute): CalculatedRoute {
     durationSeconds: saved.durationSeconds,
     instructions: saved.instructions,
     ...(saved.structures?.length ? { structures: saved.structures } : {}),
+    ...(saved.signals?.length ? { signals: saved.signals } : {}),
     profile: saved.profile,
     label: saved.label ?? saved.name,
   };

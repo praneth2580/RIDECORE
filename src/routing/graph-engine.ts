@@ -1,4 +1,4 @@
-import type { CalculatedRoute, Coordinate } from './routing-adapter';
+import type { CalculatedRoute, Coordinate, RouteSignal } from './routing-adapter';
 import {
   bearingDegrees,
   haversineMeters,
@@ -385,7 +385,9 @@ export class OfflineGraphEngine {
 
     // Snapped-on stubs from the pin to the road ride at a crawl.
     let cues = guidance.cues;
+    let startStubMeters = 0;
     if (haversineMeters(start, coordinates[0]!) > 1) {
+      startStubMeters = haversineMeters(start, coordinates[0]!);
       seconds += haversineMeters(start, coordinates[0]!) / 5;
       coordinates.unshift(start);
       cues = new Map([...cues].map(([index, cue]) => [index + 1, cue]));
@@ -411,8 +413,30 @@ export class OfflineGraphEngine {
       durationSeconds: Math.max(30, Math.round(seconds)),
       instructions,
       structures: guidance.structures,
+      signals: this.routeSignals(found.edges, startStubMeters),
       meta: { edgeCount: found.edges.length },
     };
+  }
+
+  /**
+   * The traffic signals the route waits at. An edge pays a signal's delay
+   * when it enters a signal junction (once per junction, whichever way it
+   * is crossed, and only for signals facing that way), so these are the
+   * same waits the duration counts.
+   */
+  private routeSignals(edges: GraphEdge[], startMeters: number): RouteSignal[] {
+    const signals: RouteSignal[] = [];
+    let along = startMeters;
+    for (const edge of edges) {
+      along += edge.meters;
+      if (edge.delaySeconds > 0 && this.controls.get(edge.to)?.kind === 'traffic_signals') {
+        signals.push({
+          coordinate: edge.geometry[edge.geometry.length - 1]!,
+          alongMeters: Math.round(along),
+        });
+      }
+    }
+    return signals;
   }
 
   /**

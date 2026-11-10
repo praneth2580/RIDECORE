@@ -31,6 +31,13 @@ export interface RouteStructure {
   coordinates: Coordinate[];
 }
 
+/** A traffic signal the route stops at: one per junction, however many poles it has. */
+export interface RouteSignal {
+  coordinate: Coordinate;
+  /** Where along the route, measured like instruction distances. */
+  alongMeters: number;
+}
+
 export interface CalculatedRoute {
   coordinates: Coordinate[];
   distanceMeters: number;
@@ -38,6 +45,8 @@ export interface CalculatedRoute {
   instructions: TurnInstruction[];
   /** Bridges and tunnels along it, in order. Absent when the engine doesn't know. */
   structures?: RouteStructure[];
+  /** Traffic signals along it, in order. Absent when the engine doesn't know. */
+  signals?: RouteSignal[];
   id?: string;
   profile?: RoutingProfileId;
   label?: string;

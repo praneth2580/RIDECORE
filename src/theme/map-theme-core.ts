@@ -79,6 +79,15 @@ export interface MapTheme {
     label: string;
     labelHalo: string;
   };
+  /** Traffic signals on the route, on the map and in the navigation banner. */
+  signals: {
+    housing: string;
+    /** The edge of the housing and its post. */
+    outline: string;
+    red: string;
+    amber: string;
+    green: string;
+  };
   markers: {
     /** The GPS dot and the navigation arrow. */
     rider: string;
@@ -157,6 +166,13 @@ export const DEFAULT_MAP_THEME: MapTheme = {
     routeTunnel: '#ffffff',
     label: '#3b2a0e',
     labelHalo: '#ffffff',
+  },
+  signals: {
+    housing: '#1d1d1d',
+    outline: '#ffffff',
+    red: '#ff4d4f',
+    amber: '#ffb020',
+    green: '#2fcf6f',
   },
   markers: {
     rider: '#3b8ef0',

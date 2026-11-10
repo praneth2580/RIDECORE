@@ -1,4 +1,4 @@
-import type { Coordinate, RouteStructure } from './routing-adapter';
+import type { Coordinate, RouteSignal, RouteStructure } from './routing-adapter';
 import type { SavedPlaces, SavedRoute, TrailCompassRouteFile } from '../types/route';
 
 export const ROUTE_FILE_FORMAT = 'trailcompass-route' as const;
@@ -147,10 +147,32 @@ function normalizeSavedRoute(route: SavedRoute): SavedRoute {
     durationSeconds: Number(route.durationSeconds) || 0,
     instructions: Array.isArray(route.instructions) ? route.instructions : [],
     ...(structuresFor(route) ? { structures: structuresFor(route) } : {}),
+    ...(signalsFor(route) ? { signals: signalsFor(route) } : {}),
     profile: route.profile,
     label: route.label,
     ...(placesFor(route) ? { places: placesFor(route) } : {}),
   };
+}
+
+/** The route's traffic signals from a file, keeping only well-formed ones. */
+function signalsFor(route: SavedRoute): RouteSignal[] | undefined {
+  const raw = route.signals as unknown;
+  if (!Array.isArray(raw)) return undefined;
+  const signals = raw.flatMap((s): RouteSignal[] => {
+    if (!s || typeof s !== 'object') return [];
+    const { coordinate, alongMeters } = s as Record<string, unknown>;
+    if (
+      !Array.isArray(coordinate) ||
+      !Number.isFinite(coordinate[0]) ||
+      !Number.isFinite(coordinate[1]) ||
+      typeof alongMeters !== 'number' ||
+      !Number.isFinite(alongMeters)
+    ) {
+      return [];
+    }
+    return [{ coordinate: [coordinate[0], coordinate[1]], alongMeters }];
+  });
+  return signals.length > 0 ? signals : undefined;
 }
 
 /** The route's bridges and tunnels from a file, keeping only well-formed ones. */

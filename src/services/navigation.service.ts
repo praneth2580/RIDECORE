@@ -14,6 +14,7 @@ import {
 import {
   selectNextInstruction,
   selectNextInstructionIndex,
+  signalAhead,
 } from '../routing/turn-instructions';
 import {
   remainingFromProjectionMeters,
@@ -201,6 +202,7 @@ export class NavigationService {
       showAllRoutes: false,
       offRoute: false,
       currentInstruction: undefined,
+      signalAhead: undefined,
       distanceToNextManeuverMeters: undefined,
       remainingDistanceMeters: undefined,
       remainingDurationSeconds: undefined,
@@ -258,13 +260,14 @@ export class NavigationService {
       index,
       this.state.showAllRoutes === true,
     );
-    mapService.drawRoute(route.coordinates, index, route.structures);
+    mapService.drawRoute(route, index);
     const next = selectNextInstruction(route.instructions, 0);
     this.setState({
       ...this.state,
       status: this.state.status === 'navigating' ? 'navigating' : 'choosing',
       selectedAlternativeIndex: index,
       currentInstruction: next,
+      signalAhead: undefined,
       distanceToNextManeuverMeters: next?.distanceMeters,
       remainingDistanceMeters: route.distanceMeters,
       remainingDurationSeconds: route.durationSeconds,
@@ -284,7 +287,7 @@ export class NavigationService {
       pick,
       false,
     );
-    mapService.drawRoute(route.coordinates, pick, route.structures);
+    mapService.drawRoute(route, pick);
     mapService.fitRoute(route.coordinates);
 
     const next = selectNextInstruction(route.instructions, 0);
@@ -294,6 +297,7 @@ export class NavigationService {
       selectedAlternativeIndex: pick,
       showAllRoutes: false,
       currentInstruction: next,
+      signalAhead: undefined,
       distanceToNextManeuverMeters: next?.distanceMeters,
       remainingDistanceMeters: route.distanceMeters,
       remainingDurationSeconds: route.durationSeconds,
@@ -327,7 +331,7 @@ export class NavigationService {
         name: `Stop ${i + 1}`,
       })),
     );
-    mapService.drawRoute(calculated.coordinates, 0, calculated.structures);
+    mapService.drawRoute(calculated, 0);
     mapService.fitRoute(calculated.coordinates);
 
     const next = selectNextInstruction(calculated.instructions, 0);
@@ -340,6 +344,7 @@ export class NavigationService {
       selectedAlternativeIndex: 0,
       showAllRoutes: false,
       currentInstruction: next,
+      signalAhead: undefined,
       distanceToNextManeuverMeters: next?.distanceMeters,
       remainingDistanceMeters: calculated.distanceMeters,
       remainingDurationSeconds: calculated.durationSeconds,
@@ -489,7 +494,7 @@ export class NavigationService {
         0,
         showAll,
       );
-      mapService.drawRoute(this.route.coordinates, 0, this.route.structures);
+      mapService.drawRoute(this.route, 0);
       if (!showAll) {
         mapService.fitRoute(this.route.coordinates);
       }
@@ -504,6 +509,7 @@ export class NavigationService {
         selectedAlternativeIndex: 0,
         showAllRoutes: showAll,
         currentInstruction: next,
+        signalAhead: undefined,
         distanceToNextManeuverMeters: next?.distanceMeters,
         remainingDistanceMeters: this.route.distanceMeters,
         remainingDurationSeconds: this.route.durationSeconds,
@@ -572,7 +578,7 @@ export class NavigationService {
       index,
       showAll,
     );
-    mapService.drawRoute(this.route.coordinates, index, this.route.structures);
+    mapService.drawRoute(this.route, index);
     if (status === 'choosing') {
       mapService.fitRoute(this.route.coordinates);
     }
@@ -662,6 +668,7 @@ export class NavigationService {
         status,
         waypoints: this.waypoints,
         currentInstruction: next,
+        signalAhead: undefined,
         distanceToNextManeuverMeters: distanceToNext,
         remainingDistanceMeters: remaining,
         offRoute: true,
@@ -677,6 +684,13 @@ export class NavigationService {
       status,
       waypoints: this.waypoints,
       currentInstruction: next,
+      signalAhead:
+        signalAhead(
+          route.signals,
+          match.alongMeters,
+          // "Signal at the turn", but not at the arrival.
+          step && next?.maneuver !== 'arrive' ? step.endAlongMeters : undefined,
+        ) ?? undefined,
       distanceToNextManeuverMeters: distanceToNext,
       remainingDistanceMeters: remaining,
       remainingDurationSeconds: remainingDurationSeconds(route, remaining),
@@ -755,7 +769,7 @@ export class NavigationService {
         0,
         false,
       );
-      mapService.drawRoute(this.route.coordinates, 0, this.route.structures);
+      mapService.drawRoute(this.route, 0);
       const next = selectNextInstruction(this.route.instructions, 0);
       // Stay in navigation mode after a mid-ride recalculation.
       this.setState({
@@ -767,6 +781,7 @@ export class NavigationService {
         selectedAlternativeIndex: 0,
         showAllRoutes: false,
         currentInstruction: next,
+        signalAhead: undefined,
         distanceToNextManeuverMeters: next?.distanceMeters,
         remainingDistanceMeters: this.route.distanceMeters,
         remainingDurationSeconds: this.route.durationSeconds,
@@ -856,7 +871,7 @@ export class NavigationService {
         index,
         false,
       );
-      mapService.drawRoute(this.route.coordinates, index, this.route.structures);
+      mapService.drawRoute(this.route, index);
       this.setState({
         ...this.state,
         status: 'choosing',
@@ -920,6 +935,7 @@ export class NavigationService {
       showAllRoutes: false,
       offRoute: false,
       currentInstruction: undefined,
+      signalAhead: undefined,
       distanceToNextManeuverMeters: undefined,
       remainingDistanceMeters: undefined,
       remainingDurationSeconds: undefined,

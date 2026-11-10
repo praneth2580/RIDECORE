@@ -5,8 +5,10 @@ import {
   formatInstructionBanner,
   formatManeuverDistance,
   maneuverKind,
+  signalWarningLabel,
   structureSign,
   type ManeuverKind,
+  type SignalAhead,
   type StructureSign,
 } from '../routing/turn-instructions';
 
@@ -78,6 +80,7 @@ export function NavigationBanner({
   const maneuverDistance = state.distanceToNextManeuverMeters;
   // Up onto the flyover or along the road below it, at a glance.
   const sign = maneuver ? structureSign(maneuver) : null;
+  const signal = maneuver ? state.signalAhead : undefined;
 
   const bannerClass = showPlan
     ? 'tc-nav-banner tc-nav-banner-idle'
@@ -108,7 +111,12 @@ export function NavigationBanner({
                 </p>
               ) : null}
               <p className="tc-nav-instruction">{maneuver.text}</p>
-              {sign ? <StructureSignBadge sign={sign} /> : null}
+              {sign || signal ? (
+                <div className="tc-nav-chips">
+                  {sign ? <StructureSignBadge sign={sign} /> : null}
+                  {signal ? <SignalWarning signal={signal} /> : null}
+                </div>
+              ) : null}
             </div>
           </div>
         ) : (
@@ -338,6 +346,21 @@ function ManeuverIcon({ kind }: { kind: ManeuverKind }) {
         ))}
       </svg>
     </span>
+  );
+}
+
+/** "Signal in 180 m" with a small traffic light, while one is close ahead. */
+function SignalWarning({ signal }: { signal: SignalAhead }) {
+  return (
+    <p className="tc-nav-signal" data-at-turn={signal.atManeuver ? 'true' : undefined}>
+      <svg className="tc-nav-signal-icon" viewBox="0 0 12 24" aria-hidden>
+        <rect x="1" y="1" width="10" height="22" rx="3" className="tc-nav-signal-housing" />
+        <circle cx="6" cy="6" r="2.4" className="tc-nav-signal-red" />
+        <circle cx="6" cy="12" r="2.4" className="tc-nav-signal-amber" />
+        <circle cx="6" cy="18" r="2.4" className="tc-nav-signal-green" />
+      </svg>
+      <span>{signalWarningLabel(signal)}</span>
+    </p>
   );
 }
 

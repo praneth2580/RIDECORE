@@ -201,6 +201,22 @@ describe('OfflineGraphEngine time model', () => {
     expect(route.durationSeconds).toBe(Math.round(rideSeconds + 25));
   });
 
+  it('lists the signals the route stops at: one per junction, facing its way', () => {
+    // A two-pole junction ~500 m on, then a signal for traffic the other way.
+    const a: Coordinate = [0.0045, 0];
+    const b: Coordinate = [0.0046, 0];
+    const back: Coordinate = [0.007, 0];
+    const engine = new OfflineGraphEngine();
+    engine.loadFeatureCollection(
+      network([{ highway: 'residential', coordinates: [start, a, b, back, goal] }], {
+        controls: [signal(a), signal(b), { coordinate: back, kind: 'traffic_signals', direction: 'backward' }],
+      }),
+    );
+    const route = engine.calculateRoute(start, goal);
+    expect(route.signals).toEqual([{ coordinate: a, alongMeters: 500 }]);
+    expect(engine.calculateRoute(goal, start).signals?.map((s) => s.coordinate)).toEqual([back, b]);
+  });
+
   it('rides a multi-lane road faster than a narrow one', () => {
     const wide = new OfflineGraphEngine();
     wide.loadFeatureCollection(
