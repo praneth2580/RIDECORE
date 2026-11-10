@@ -1,4 +1,4 @@
-import type { TurnInstruction } from './routing-adapter';
+import type { InstructionStructure, TurnInstruction } from './routing-adapter';
 
 /**
  * Picks the next turn instruction based on remaining distance along the route.
@@ -95,4 +95,45 @@ export function maneuverKind(instruction: TurnInstruction): ManeuverKind {
   if (/\bsharp\b/.test(text)) return `sharp-${side}`;
   if (/\b(slight|bear|keep|stay|exit|ramp|merge)\b/.test(text)) return `slight-${side}`;
   return side;
+}
+
+export interface StructureSign {
+  kind: InstructionStructure['kind'];
+  action: InstructionStructure['action'];
+  /** "Take flyover", "Go below flyover", "Enter underpass", "Skip underpass"… */
+  label: string;
+}
+
+/**
+ * The banner's sign for a maneuver at a bridge or tunnel: whether to go up
+ * onto it (or into it) or stay off it. Null for any other maneuver, and for
+ * one from a route file this build can't read.
+ */
+export function structureSign(instruction: TurnInstruction | undefined): StructureSign | null {
+  const structure = instruction?.structure;
+  if (!structure || (structure.kind !== 'bridge' && structure.kind !== 'tunnel')) return null;
+  const { kind, action } = structure;
+  const term =
+    typeof structure.term === 'string' && structure.term.trim() ? structure.term.trim() : kind;
+  let label: string;
+  switch (action) {
+    case 'take':
+      label = kind === 'bridge' ? `Take ${term}` : `Enter ${term}`;
+      break;
+    case 'below':
+      label = `Go below ${term}`;
+      break;
+    case 'avoid':
+      label = `Skip ${term}`;
+      break;
+    case 'stay':
+      label = kind === 'bridge' ? `Stay on ${term}` : `Stay in ${term}`;
+      break;
+    case 'exit':
+      label = `Exit ${term}`;
+      break;
+    default:
+      return null;
+  }
+  return { kind, action, label };
 }

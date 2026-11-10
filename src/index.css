@@ -1233,6 +1233,53 @@ button {
   overflow-wrap: anywhere;
 }
 
+/* At a flyover or underpass fork: up onto it, or along the road below. */
+.tc-nav-structure {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.4rem 0 0;
+  padding: 0.2rem 0.65rem 0.2rem 0.35rem;
+  border: 1px solid var(--tc-border-strong);
+  /* Not a pill: on a narrow banner the label may wrap to two lines. */
+  border-radius: var(--tc-radius-sm);
+  background: var(--tc-accent-soft);
+  color: var(--tc-text);
+  font-family: var(--tc-font-display);
+  font-size: 0.85rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.tc-nav-structure-icon {
+  flex-shrink: 0;
+  width: 3.4rem;
+  height: 2.125rem;
+  color: var(--tc-accent);
+}
+
+.tc-nav-structure-route {
+  stroke: currentColor;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tc-nav-structure-other {
+  stroke: var(--tc-muted);
+  stroke-width: 2;
+  stroke-dasharray: 3 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tc-nav-structure-pillar {
+  stroke: var(--tc-muted);
+  stroke-width: 1.8;
+}
+
 .tc-nav-gps-warning {
   margin: 0.3rem 0 0;
   color: var(--tc-accent);
@@ -4741,6 +4788,16 @@ button.tc-plan-point-row[aria-expanded='true'] {
   .tc-nav-maneuver-icon svg {
     width: 2rem;
     height: 2rem;
+  }
+
+  .tc-nav-structure {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .tc-nav-structure-icon {
+    width: 2.6rem;
+    height: 1.625rem;
   }
 
   .tc-nav-maneuver-distance {

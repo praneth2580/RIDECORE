@@ -65,6 +65,20 @@ export interface MapTheme {
     label: string;
     labelHalo: string;
   };
+  /** Bridges, flyovers, tunnels and underpasses. */
+  structures: {
+    /** The edges of a bridge on the basemap, so a flyover stands out from the road below it. */
+    bridgeCasing: string;
+    /** The soft shadow a bridge casts on the basemap. */
+    bridgeShadow: string;
+    /** The rails along the route where it goes over a bridge. */
+    routeBridge: string;
+    /** The dashed stripe down the route where it goes through a tunnel. */
+    routeTunnel: string;
+    /** The names of the route's bridges and tunnels ("Flyover", "Sion Flyover"). */
+    label: string;
+    labelHalo: string;
+  };
   markers: {
     /** The GPS dot and the navigation arrow. */
     rider: string;
@@ -136,6 +150,14 @@ export const DEFAULT_MAP_THEME: MapTheme = {
     label: '#3b3b3b',
     labelHalo: '#ffffff',
   },
+  structures: {
+    bridgeCasing: '#73655a',
+    bridgeShadow: 'rgba(40, 30, 20, 0.3)',
+    routeBridge: '#1a1205',
+    routeTunnel: '#ffffff',
+    label: '#3b2a0e',
+    labelHalo: '#ffffff',
+  },
   markers: {
     rider: '#3b8ef0',
     riderOutline: '#ffffff',
@@ -175,6 +197,13 @@ export const MAP_THEME_PRESETS: Record<string, MapThemeOverrides> = {
     route: { passed: '#66707a' },
     places: { label: '#e6ece8', labelHalo: '#0a120f' },
     traffic: { casing: '#000000' },
+    structures: {
+      bridgeCasing: '#a7b5ae',
+      bridgeShadow: 'rgba(0, 0, 0, 0.6)',
+      routeBridge: '#e8e2d4',
+      label: '#e6ece8',
+      labelHalo: '#0a120f',
+    },
   },
 };
 

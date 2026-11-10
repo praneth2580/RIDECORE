@@ -33,6 +33,12 @@ export const ROAD_TAG_KEYS = [
   'motor_vehicle',
   'vehicle',
   'access',
+  // Guidance only (flyover forks, the route's bridges on the map), so
+  // packs saved before these were kept still route; they just lack it.
+  'bridge',
+  'bridge:name',
+  'tunnel',
+  'tunnel:name',
 ] as const;
 
 export type RoadTags = Partial<Record<string, string>>;
@@ -169,6 +175,39 @@ export function parseMaxspeedMps(raw: string | undefined): number | null {
   if (!Number.isFinite(n) || n <= 0) return null;
   const kmh = match[2] === 'mph' ? n * 1.609 : n;
   return kmh / 3.6;
+}
+
+// ── Bridges and tunnels ──────────────────────────────────────────────
+
+/** A road off the ground: a bridge or flyover, or a tunnel or underpass. */
+export type RoadStructure = 'bridge' | 'tunnel';
+
+/** `bridge=*` / `tunnel=*` (any value but "no"; building_passage is a tunnel). */
+export function roadStructure(tags: RoadTags): RoadStructure | null {
+  const bridge = firstValue(tags.bridge);
+  if (bridge && bridge !== 'no') return 'bridge';
+  const tunnel = firstValue(tags.tunnel);
+  if (tunnel && tunnel !== 'no') return 'tunnel';
+  return null;
+}
+
+/** Way names that name the structure itself rather than the road over it. */
+const STRUCTURE_NAME =
+  /\b(flyover|fly-over|bridge|overpass|underpass|subway|tunnel|viaduct|setu|sea link)\b/i;
+
+/**
+ * The bridge's or tunnel's own name: `bridge:name` / `tunnel:name`, else the
+ * way's name when it is one ("Sion Flyover", not "Eastern Express Highway").
+ */
+export function structureName(
+  structure: RoadStructure,
+  tags: RoadTags,
+  wayName: string | null | undefined,
+): string | null {
+  const own = tags[`${structure}:name`]?.trim();
+  if (own) return own;
+  const name = wayName?.trim();
+  return name && STRUCTURE_NAME.test(name) ? name : null;
 }
 
 // ── Junction controls ────────────────────────────────────────────────

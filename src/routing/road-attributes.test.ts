@@ -6,6 +6,8 @@ import {
   onewayDirection,
   parseMaxspeedMps,
   roadSpeedMps,
+  roadStructure,
+  structureName,
 } from './road-attributes';
 import { MAX_SPEED_MPS, highwaySpeedMps } from './routing-profiles';
 
@@ -102,5 +104,25 @@ describe('controlFromNodeTags', () => {
       kind: 'level_crossing',
     });
     expect(controlFromNodeTags([1, 2], { highway: 'crossing' })).toBeNull();
+  });
+});
+
+describe('roadStructure', () => {
+  it('reads bridges and tunnels, whatever kind', () => {
+    expect(roadStructure({ bridge: 'yes' })).toBe('bridge');
+    expect(roadStructure({ bridge: 'viaduct', layer: '2' })).toBe('bridge');
+    expect(roadStructure({ tunnel: 'building_passage' })).toBe('tunnel');
+    expect(roadStructure({ bridge: 'no', tunnel: 'no' })).toBeNull();
+    expect(roadStructure({})).toBeNull();
+  });
+});
+
+describe('structureName', () => {
+  it("takes the structure's own name, or a way name that is one", () => {
+    expect(structureName('bridge', { 'bridge:name': 'Sion Flyover' }, 'LBS Marg')).toBe('Sion Flyover');
+    expect(structureName('bridge', {}, 'Andheri Flyover')).toBe('Andheri Flyover');
+    expect(structureName('tunnel', {}, 'Milan Subway')).toBe('Milan Subway');
+    expect(structureName('bridge', {}, 'Western Express Highway')).toBeNull();
+    expect(structureName('bridge', {}, null)).toBeNull();
   });
 });

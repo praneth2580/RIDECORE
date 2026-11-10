@@ -1,4 +1,8 @@
-import type { Coordinate, TurnInstruction } from './routing-adapter';
+import type {
+  Coordinate,
+  InstructionStructure,
+  TurnInstruction,
+} from './routing-adapter';
 import {
   bearingDegrees,
   haversineMeters,
@@ -7,6 +11,19 @@ import {
 
 const MIN_SEGMENT_M = 12;
 const TURN_THRESHOLD_DEG = 35;
+
+/**
+ * A choice the road network knows about that the path's angles don't show,
+ * such as the shallow fork where a flyover leaves the road below it.
+ */
+export interface PathCue {
+  /** Which way to bear, or null when the branches can't be told apart by side. */
+  side: 'left' | 'right' | null;
+  /** What the choice is for, to follow "Keep left to …": "take the flyover". */
+  purpose: string;
+  /** Carried onto the instruction, for the banner's sign. */
+  structure?: InstructionStructure;
+}
 
 function maneuverFromAngle(angle: number): { text: string; maneuver: string } {
   if (Math.abs(angle) < TURN_THRESHOLD_DEG) {
@@ -19,10 +36,37 @@ function maneuverFromAngle(angle: number): { text: string; maneuver: string } {
 }
 
 /**
- * Derive turn-by-turn instructions from a snapped path polyline.
+ * "Turn left to stay below the flyover" when the path turns there anyway,
+ * else "Keep right to take the flyover", or "Take the flyover" with no side.
+ */
+function maneuverFromCue(
+  cue: PathCue,
+  angle: number,
+): { text: string; maneuver: string } {
+  if (Math.abs(angle) >= TURN_THRESHOLD_DEG) {
+    const turn = maneuverFromAngle(angle);
+    return { text: `${turn.text} to ${cue.purpose}`, maneuver: turn.maneuver };
+  }
+  if (cue.side) {
+    return {
+      text: `Keep ${cue.side} to ${cue.purpose}`,
+      maneuver: `slight ${cue.side}`,
+    };
+  }
+  return {
+    text: cue.purpose.charAt(0).toUpperCase() + cue.purpose.slice(1),
+    maneuver: 'continue',
+  };
+}
+
+/**
+ * Derive turn-by-turn instructions from a snapped path polyline. `cues`
+ * (by path index) add maneuvers the angles miss; one is never dropped for
+ * being close to the last turn.
  */
 export function buildManeuversFromPath(
   path: Coordinate[],
+  cues?: ReadonlyMap<number, PathCue>,
 ): TurnInstruction[] {
   if (path.length < 2) {
     return [{ text: 'Arrive at destination', distanceMeters: 0, maneuver: 'arrive' }];
@@ -31,37 +75,43 @@ export function buildManeuversFromPath(
   const instructions: TurnInstruction[] = [];
   let segmentStart = 0;
   let lastBearing = bearingDegrees(path[0]!, path[1]!);
+  const distanceSinceLast = (end: number) => {
+    let meters = 0;
+    for (let j = segmentStart + 1; j <= end; j++) {
+      meters += haversineMeters(path[j - 1]!, path[j]!);
+    }
+    return meters;
+  };
 
   for (let i = 1; i < path.length - 1; i++) {
     const prev = path[i - 1]!;
     const cur = path[i]!;
     const next = path[i + 1]!;
-    const distPrev = haversineMeters(prev, cur);
-    if (distPrev < 2) continue;
+    const cue = cues?.get(i);
+    if (!cue && haversineMeters(prev, cur) < 2) continue;
 
     const outgoing = bearingDegrees(cur, next);
     const angle = turnAngleDegrees(lastBearing, outgoing);
 
-    if (Math.abs(angle) >= TURN_THRESHOLD_DEG) {
-      let distanceMeters = 0;
-      for (let j = segmentStart + 1; j <= i; j++) {
-        distanceMeters += haversineMeters(path[j - 1]!, path[j]!);
-      }
+    if (cue) {
+      instructions.push({
+        ...maneuverFromCue(cue, angle),
+        distanceMeters: distanceSinceLast(i),
+        ...(cue.structure ? { structure: cue.structure } : {}),
+      });
+      segmentStart = i;
+    } else if (Math.abs(angle) >= TURN_THRESHOLD_DEG) {
+      const distanceMeters = distanceSinceLast(i);
       if (distanceMeters >= MIN_SEGMENT_M || instructions.length === 0) {
         const { text, maneuver } = maneuverFromAngle(angle);
         instructions.push({ text, distanceMeters, maneuver });
         segmentStart = i;
       }
-      lastBearing = outgoing;
-    } else {
-      lastBearing = outgoing;
     }
+    lastBearing = outgoing;
   }
 
-  let finalDistance = 0;
-  for (let j = segmentStart + 1; j < path.length; j++) {
-    finalDistance += haversineMeters(path[j - 1]!, path[j]!);
-  }
+  const finalDistance = distanceSinceLast(path.length - 1);
   instructions.push({
     text: 'Arrive at destination',
     distanceMeters: Math.max(finalDistance, 1),

@@ -10,7 +10,7 @@ import {
 } from 'maplibre-gl';
 import type { Feature } from 'geojson';
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
-import type { Coordinate } from '../routing/routing-adapter';
+import type { Coordinate, RouteStructure } from '../routing/routing-adapter';
 import { haversineMeters, type PolylineProjection } from '../routing/geo';
 import {
   interpolateAngle,
@@ -104,7 +104,7 @@ export interface MapAdapter {
     options?: { speedMps?: number | null },
   ): void;
   fitRoute(coordinates: Coordinate[], padding?: number | PaddingOptions): void;
-  drawRoute(coordinates: Coordinate[], routeIndex?: number): void;
+  drawRoute(coordinates: Coordinate[], routeIndex?: number, structures?: RouteStructure[]): void;
   clearRoute(): void;
   reportMapDataStatus(): MapDataStatus;
   dispose(): void;
@@ -119,6 +119,12 @@ const RECALC_LAYER = 'trailcompass-recalc-link-line';
 const ALT_SOURCE = 'trailcompass-route-alts';
 const ALT_LAYER = 'trailcompass-route-alts-line';
 const ALT_HIT_LAYER = 'trailcompass-route-alts-hit';
+/** The route's bridges (rails under it), tunnels (a dashed stripe on it) and their names. */
+const STRUCTURE_SOURCE = 'trailcompass-route-structures';
+const STRUCTURE_BRIDGE_LAYER = 'trailcompass-route-bridge';
+const STRUCTURE_TUNNEL_LAYER = 'trailcompass-route-tunnel';
+const STRUCTURE_LABEL_LAYER = 'trailcompass-route-structure-label';
+const STRUCTURE_LAYERS = [STRUCTURE_BRIDGE_LAYER, STRUCTURE_TUNNEL_LAYER, STRUCTURE_LABEL_LAYER];
 
 const ALT_COLORS = COLORS.route.alternatives;
 
@@ -815,7 +821,8 @@ export class MapLibreAdapter implements MapAdapter {
     this.map.fitBounds(bounds, { padding, duration: 600 });
   }
 
-  drawRoute(coordinates: Coordinate[], routeIndex = 0): void {
+  /** `structures`: the route's bridges and tunnels, marked along it. */
+  drawRoute(coordinates: Coordinate[], routeIndex = 0, structures: RouteStructure[] = []): void {
     // Redrawing the same route (map shown again) keeps the ridden part grey.
     if (coordinates !== this.routeLine?.coordinates) {
       this.routeLine = { coordinates, mercator: null };
@@ -833,6 +840,17 @@ export class MapLibreAdapter implements MapAdapter {
         coordinates,
       },
     });
+    const structureSource = this.map.getSource(STRUCTURE_SOURCE);
+    if (structureSource instanceof GeoJSONSource) {
+      structureSource.setData({
+        type: 'FeatureCollection',
+        features: structures.map((structure) => ({
+          type: 'Feature',
+          properties: { kind: structure.kind, label: structure.label ?? '' },
+          geometry: { type: 'LineString', coordinates: structure.coordinates },
+        })),
+      });
+    }
     this.setRouteRecalculating(false);
   }
 
@@ -882,6 +900,12 @@ export class MapLibreAdapter implements MapAdapter {
   setRouteRecalculating(active: boolean): void {
     this.routeRecalculating = active;
     if (!this.map || !this.map.getLayer(ROUTE_LAYER)) return;
+    // The faded, dashed old route doesn't need its bridges called out.
+    for (const id of STRUCTURE_LAYERS) {
+      if (this.map.getLayer(id)) {
+        this.map.setLayoutProperty(id, 'visibility', active ? 'none' : 'visible');
+      }
+    }
     if (active) {
       this.map.setPaintProperty(ROUTE_LAYER, 'line-opacity', 0.35);
       this.map.setPaintProperty(ROUTE_LAYER, 'line-dasharray', [1.2, 1.6]);
@@ -1006,9 +1030,11 @@ export class MapLibreAdapter implements MapAdapter {
     this.routeLine = null;
     this.routeProgress = null;
     if (!this.map) return;
-    const source = this.map.getSource(ROUTE_SOURCE);
-    if (source instanceof GeoJSONSource) {
-      source.setData({ type: 'FeatureCollection', features: [] });
+    for (const id of [ROUTE_SOURCE, STRUCTURE_SOURCE]) {
+      const source = this.map.getSource(id);
+      if (source instanceof GeoJSONSource) {
+        source.setData({ type: 'FeatureCollection', features: [] });
+      }
     }
     this.clearGhostRoute();
     this.clearRecalcLink();
@@ -1294,6 +1320,63 @@ export class MapLibreAdapter implements MapAdapter {
           'line-color': COLORS.route.active,
           'line-width': 5,
           'line-opacity': 0.92,
+        },
+      });
+    }
+
+    if (!map.getSource(STRUCTURE_SOURCE)) {
+      map.addSource(STRUCTURE_SOURCE, {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      // Under the route: dark rails either side of it, like a bridge's edges.
+      map.addLayer(
+        {
+          id: STRUCTURE_BRIDGE_LAYER,
+          type: 'line',
+          source: STRUCTURE_SOURCE,
+          filter: ['==', ['get', 'kind'], 'bridge'],
+          layout: { 'line-join': 'round' },
+          paint: {
+            'line-color': COLORS.structures.routeBridge,
+            'line-width': 11,
+            'line-opacity': 0.9,
+          },
+        },
+        ROUTE_LAYER,
+      );
+      // Over it: a dashed stripe, the road out of sight.
+      map.addLayer({
+        id: STRUCTURE_TUNNEL_LAYER,
+        type: 'line',
+        source: STRUCTURE_SOURCE,
+        filter: ['==', ['get', 'kind'], 'tunnel'],
+        paint: {
+          'line-color': COLORS.structures.routeTunnel,
+          'line-width': 1.6,
+          'line-dasharray': [2, 2],
+          'line-opacity': 0.9,
+        },
+      });
+      map.addLayer({
+        id: STRUCTURE_LABEL_LAYER,
+        type: 'symbol',
+        source: STRUCTURE_SOURCE,
+        minzoom: 13,
+        filter: ['!=', ['get', 'label'], ''],
+        layout: {
+          'symbol-placement': 'line-center',
+          'text-field': ['get', 'label'],
+          'text-font': ['Noto Sans Bold'],
+          'text-size': 12,
+          // Beside the route, not over it.
+          'text-offset': [0, -1.3],
+          'text-max-angle': 30,
+        },
+        paint: {
+          'text-color': COLORS.structures.label,
+          'text-halo-color': COLORS.structures.labelHalo,
+          'text-halo-width': 1.5,
         },
       });
     }

@@ -5,6 +5,7 @@ import { anySignal } from '../routing/abort';
 import { mapTheme } from '../theme/map-theme';
 import { applyBasemapTheme } from '../theme/map-theme-core';
 import { packFiles } from './pack-files';
+import { emphasizeStructures } from './structure-style';
 import { tileStore } from './tile-store';
 
 /**
@@ -99,6 +100,8 @@ export function buildMapStyle(): StyleSpecification {
     }
   }
   applyBasemapTheme(style, mapTheme.basemap);
+  // Flyovers and underpasses, distinct from the road beside them.
+  emphasizeStructures(style, mapTheme.structures);
   return style;
 }
 
