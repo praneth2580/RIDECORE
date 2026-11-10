@@ -73,3 +73,17 @@ describe('route files keep bridges and tunnels', () => {
     expect(parseRouteFile(serializeRouteFile(trip())).structures).toBeUndefined();
   });
 });
+
+describe('route files keep traffic signals', () => {
+  const signals = [
+    { coordinate: [72.86, 19.12], alongMeters: 2_670 },
+    { coordinate: [72.87, 19.11], alongMeters: 4_120 },
+  ];
+
+  it('reads them back, dropping malformed ones', () => {
+    const odd = [...signals, { coordinate: [72.8], alongMeters: 10 }, { coordinate: [72.8, 19.1], alongMeters: 'far' }];
+    const saved = { ...trip(), signals: odd } as unknown as SavedRoute;
+    expect(parseRouteFile(serializeRouteFile(saved)).signals).toEqual(signals);
+    expect(parseRouteFile(serializeRouteFile(trip())).signals).toBeUndefined();
+  });
+});

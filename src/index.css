@@ -1233,12 +1233,20 @@ button {
   overflow-wrap: anywhere;
 }
 
+/* Under the instruction: the flyover sign and the signal-ahead warning. */
+.tc-nav-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
 /* At a flyover or underpass fork: up onto it, or along the road below. */
 .tc-nav-structure {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  margin: 0.4rem 0 0;
+  margin: 0;
   padding: 0.2rem 0.65rem 0.2rem 0.35rem;
   border: 1px solid var(--tc-border-strong);
   /* Not a pill: on a narrow banner the label may wrap to two lines. */
@@ -1278,6 +1286,51 @@ button {
 .tc-nav-structure-pillar {
   stroke: var(--tc-muted);
   stroke-width: 1.8;
+}
+
+/* A traffic signal close ahead, in the map's signal colours. */
+.tc-nav-signal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.2rem 0.65rem 0.2rem 0.45rem;
+  min-height: 2.6rem;
+  box-sizing: border-box;
+  border: 1px solid var(--tc-border-strong);
+  border-radius: var(--tc-radius-sm);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--tc-text);
+  font-family: var(--tc-font-display);
+  font-size: 0.85rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.tc-nav-signal-icon {
+  flex-shrink: 0;
+  width: 0.95rem;
+  height: 1.9rem;
+}
+
+.tc-nav-signal-housing {
+  fill: var(--tc-map-signal-housing, #1d1d1d);
+  stroke: rgba(255, 255, 255, 0.6);
+  stroke-width: 1;
+}
+
+.tc-nav-signal-red {
+  fill: var(--tc-map-signal-red, #ff4d4f);
+}
+
+.tc-nav-signal-amber {
+  fill: var(--tc-map-signal-amber, #ffb020);
+}
+
+.tc-nav-signal-green {
+  fill: var(--tc-map-signal-green, #2fcf6f);
 }
 
 .tc-nav-gps-warning {
@@ -4790,9 +4843,22 @@ button.tc-plan-point-row[aria-expanded='true'] {
     height: 2rem;
   }
 
-  .tc-nav-structure {
+  .tc-nav-chips {
     margin-top: 0.25rem;
+  }
+
+  .tc-nav-structure,
+  .tc-nav-signal {
     font-size: 0.75rem;
+  }
+
+  .tc-nav-signal {
+    min-height: 2.2rem;
+  }
+
+  .tc-nav-signal-icon {
+    width: 0.8rem;
+    height: 1.6rem;
   }
 
   .tc-nav-structure-icon {

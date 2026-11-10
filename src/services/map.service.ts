@@ -10,7 +10,7 @@ import {
 } from 'maplibre-gl';
 import type { Feature } from 'geojson';
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
-import type { Coordinate, RouteStructure } from '../routing/routing-adapter';
+import type { CalculatedRoute, Coordinate } from '../routing/routing-adapter';
 import { haversineMeters, type PolylineProjection } from '../routing/geo';
 import {
   interpolateAngle,
@@ -104,7 +104,7 @@ export interface MapAdapter {
     options?: { speedMps?: number | null },
   ): void;
   fitRoute(coordinates: Coordinate[], padding?: number | PaddingOptions): void;
-  drawRoute(coordinates: Coordinate[], routeIndex?: number, structures?: RouteStructure[]): void;
+  drawRoute(route: RouteDrawing, routeIndex?: number): void;
   clearRoute(): void;
   reportMapDataStatus(): MapDataStatus;
   dispose(): void;
@@ -124,7 +124,20 @@ const STRUCTURE_SOURCE = 'trailcompass-route-structures';
 const STRUCTURE_BRIDGE_LAYER = 'trailcompass-route-bridge';
 const STRUCTURE_TUNNEL_LAYER = 'trailcompass-route-tunnel';
 const STRUCTURE_LABEL_LAYER = 'trailcompass-route-structure-label';
-const STRUCTURE_LAYERS = [STRUCTURE_BRIDGE_LAYER, STRUCTURE_TUNNEL_LAYER, STRUCTURE_LABEL_LAYER];
+/** A traffic light at each signal junction the route stops at. */
+const SIGNAL_SOURCE = 'trailcompass-route-signals';
+const SIGNAL_LAYER = 'trailcompass-route-signals-icon';
+const SIGNAL_ICON = 'tc-traffic-signal';
+/** What's marked along the active route; hidden while it is recalculated. */
+const ROUTE_DETAIL_LAYERS = [
+  STRUCTURE_BRIDGE_LAYER,
+  STRUCTURE_TUNNEL_LAYER,
+  STRUCTURE_LABEL_LAYER,
+  SIGNAL_LAYER,
+];
+
+/** What drawRoute draws: the line, its bridges and tunnels, and its traffic signals. */
+export type RouteDrawing = Pick<CalculatedRoute, 'coordinates' | 'structures' | 'signals'>;
 
 const ALT_COLORS = COLORS.route.alternatives;
 
@@ -806,8 +819,9 @@ export class MapLibreAdapter implements MapAdapter {
     this.map.fitBounds(bounds, { padding, duration: 600 });
   }
 
-  /** `structures`: the route's bridges and tunnels, marked along it. */
-  drawRoute(coordinates: Coordinate[], routeIndex = 0, structures: RouteStructure[] = []): void {
+  /** The route, with its bridges, tunnels and traffic signals marked along it. */
+  drawRoute(route: RouteDrawing, routeIndex = 0): void {
+    const { coordinates } = route;
     // Redrawing the same route (map shown again) keeps the ridden part grey.
     if (coordinates !== this.routeLine?.coordinates) {
       this.routeLine = { coordinates, mercator: null };
@@ -829,10 +843,21 @@ export class MapLibreAdapter implements MapAdapter {
     if (structureSource instanceof GeoJSONSource) {
       structureSource.setData({
         type: 'FeatureCollection',
-        features: structures.map((structure) => ({
+        features: (route.structures ?? []).map((structure) => ({
           type: 'Feature',
           properties: { kind: structure.kind, label: structure.label ?? '' },
           geometry: { type: 'LineString', coordinates: structure.coordinates },
+        })),
+      });
+    }
+    const signalSource = this.map.getSource(SIGNAL_SOURCE);
+    if (signalSource instanceof GeoJSONSource) {
+      signalSource.setData({
+        type: 'FeatureCollection',
+        features: (route.signals ?? []).map((signal) => ({
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'Point', coordinates: signal.coordinate },
         })),
       });
     }
@@ -886,7 +911,7 @@ export class MapLibreAdapter implements MapAdapter {
     this.routeRecalculating = active;
     if (!this.map || !this.map.getLayer(ROUTE_LAYER)) return;
     // The faded, dashed old route doesn't need its bridges called out.
-    for (const id of STRUCTURE_LAYERS) {
+    for (const id of ROUTE_DETAIL_LAYERS) {
       if (this.map.getLayer(id)) {
         this.map.setLayoutProperty(id, 'visibility', active ? 'none' : 'visible');
       }
@@ -1015,7 +1040,7 @@ export class MapLibreAdapter implements MapAdapter {
     this.routeLine = null;
     this.routeProgress = null;
     if (!this.map) return;
-    for (const id of [ROUTE_SOURCE, STRUCTURE_SOURCE]) {
+    for (const id of [ROUTE_SOURCE, STRUCTURE_SOURCE, SIGNAL_SOURCE]) {
       const source = this.map.getSource(id);
       if (source instanceof GeoJSONSource) {
         source.setData({ type: 'FeatureCollection', features: [] });
@@ -1365,6 +1390,31 @@ export class MapLibreAdapter implements MapAdapter {
         },
       });
     }
+
+    if (!map.getSource(SIGNAL_SOURCE)) {
+      if (!map.hasImage(SIGNAL_ICON)) {
+        map.addImage(SIGNAL_ICON, drawSignalIcon(), { pixelRatio: 2 });
+      }
+      map.addSource(SIGNAL_SOURCE, {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.addLayer({
+        id: SIGNAL_LAYER,
+        type: 'symbol',
+        source: SIGNAL_SOURCE,
+        minzoom: 12,
+        layout: {
+          'icon-image': SIGNAL_ICON,
+          'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.55, 15, 0.8, 17, 1],
+          // Standing on the junction like a signal post, upright when the map tilts.
+          'icon-anchor': 'bottom',
+          'icon-pitch-alignment': 'viewport',
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
+        },
+      });
+    }
     return true;
   }
 
@@ -1694,6 +1744,42 @@ function drawPoiIcon(kind: 'fuel' | 'food'): ImageData {
   ctx.stroke(new Path2D(POI_GLYPHS[kind]));
   ctx.restore();
   return ctx.getImageData(0, 0, size, size);
+}
+
+/** A traffic light: dark housing, red, amber and green lamps. */
+function drawSignalIcon(): ImageData {
+  const width = 30;
+  const height = 60;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d')!;
+  const { housing, outline, red, amber, green } = COLORS.signals;
+  // Housing, and a short post under it down to the junction.
+  ctx.fillStyle = outline;
+  ctx.fillRect(width / 2 - 3, 46, 6, height - 46);
+  ctx.fillStyle = housing;
+  ctx.fillRect(width / 2 - 1.5, 46, 3, height - 47);
+  const r = 8;
+  ctx.beginPath();
+  ctx.moveTo(2 + r, 2);
+  ctx.arcTo(width - 2, 2, width - 2, 48, r);
+  ctx.arcTo(width - 2, 48, 2, 48, r);
+  ctx.arcTo(2, 48, 2, 2, r);
+  ctx.arcTo(2, 2, width - 2, 2, r);
+  ctx.closePath();
+  ctx.fillStyle = housing;
+  ctx.fill();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = outline;
+  ctx.stroke();
+  [red, amber, green].forEach((color, i) => {
+    ctx.beginPath();
+    ctx.arc(width / 2, 11 + i * 13, 5, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  });
+  return ctx.getImageData(0, 0, width, height);
 }
 
 export const mapService = new MapLibreAdapter();

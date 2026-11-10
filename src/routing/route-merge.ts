@@ -13,6 +13,7 @@ export function mergeRoutes(legs: CalculatedRoute[]): CalculatedRoute {
   const coordinates: Coordinate[] = [...legs[0]!.coordinates];
   const instructions = [...legs[0]!.instructions];
   const structures = [...(legs[0]!.structures ?? [])];
+  const signals = [...(legs[0]!.signals ?? [])];
   let distanceMeters = legs[0]!.distanceMeters;
   let durationSeconds = legs[0]!.durationSeconds;
 
@@ -28,6 +29,10 @@ export function mergeRoutes(legs: CalculatedRoute[]): CalculatedRoute {
     coordinates.push(...slice);
     instructions.push(...leg.instructions);
     structures.push(...(leg.structures ?? []));
+    // Each leg measures from its own start; the merged route from the first's.
+    for (const signal of leg.signals ?? []) {
+      signals.push({ ...signal, alongMeters: signal.alongMeters + distanceMeters });
+    }
     distanceMeters += leg.distanceMeters;
     durationSeconds += leg.durationSeconds;
   }
@@ -38,5 +43,6 @@ export function mergeRoutes(legs: CalculatedRoute[]): CalculatedRoute {
     durationSeconds,
     instructions,
     ...(structures.length > 0 ? { structures } : {}),
+    ...(signals.length > 0 ? { signals } : {}),
   };
 }

@@ -278,6 +278,7 @@ The Map tab's one card, in the dock, until the ride starts. It keeps the map fre
 #### `NavigationBanner.tsx`
 The status and action strip while navigating, paused or in ride view. `RouteProgress` and its icons are shared with `MapTripCard`.
 - **Text:** while rerouting, the progress label. During navigation, a turn arrow, the distance to it and the instruction.
+- **Signal ahead:** `state.signalAhead` (set by `followRoute` from `signalAhead()` in `turn-instructions.ts`) shows a traffic-light chip while the route's next signal is within 400 m: "Signal in 180 m", "Signal at the turn" when it is within 50 m of the next turn (one junction), "Signal here". It goes 8 m past the signal, so it stays while the rider waits at the stop line.
 - **Flyover sign:** when the instruction is about a bridge or tunnel (`TurnInstruction.structure`, §8.8), a box under it with a side-view pictogram and a label from `structureSign` ("Take flyover", "Go below flyover", "Enter underpass", "Skip underpass", "Stay on flyover", "Exit flyover"). The pictogram shows the road that stays level and the one that climbs onto the flyover (or dips into the underpass): the route's is bold with an arrowhead, the other faint and dashed, and bridges stand on pillars. The turn arrow says left or right; the sign says up or down.
 - **Progress bar:** shown only when `percent` and `bytesTotal` are both known (a real byte count).
 - **Remaining:** distance, ETA and arrival time.
@@ -423,8 +424,9 @@ Wraps every map operation so the UI never touches MapLibre directly. Every colou
   | `…route` | orange `#F5A623`, 5 px | The selected route. While recalculating it becomes faded, dashed and dark amber. |
   | `…route-tunnel` | white dashed stripe on the route | Where the route goes through a tunnel or underpass |
   | `…route-structure-label` | bold text beside the route, from zoom 13 | The bridge's or tunnel's name, "Flyover", "Bridge"… |
+  | `…route-signals-icon` | a traffic light standing on the junction, from zoom 12 | Each traffic signal the route stops at (`route.signals`) |
 
-  The three structure layers share the `…route-structures` source (`drawRoute(coordinates, index, structures)`) and hide while recalculating.
+  `drawRoute(route, index)` takes the route itself and fills these from its `structures` and `signals`; they hide while recalculating.
 - **Bridges and tunnels on the basemap:** as Liberty comes, a flyover looks exactly like the road under it. `emphasizeStructures` (`offline/structure-style.ts`, run by `buildMapStyle()`) gives road bridges dark edges 1.3× wider and adds a `bridge_shadow` layer (a soft shadow, offset the same way on screen however the map turns) below every bridge layer, and dashes the edges of road tunnels. Rail and path bridges are left alone.
 
 - Key methods: `drawRoute`, `drawAlternatives(routes, selected, showAll)`, `drawGhostRoute`, `drawRecalcLink`, `setRouteRecalculating`, `fitRoute`, `centerOn`, `resumeNavigationFollow`, `setDestination`, `setItineraryStops`, `clearRoute`, `clearItinerary`.
@@ -552,6 +554,7 @@ interface RouteStructure { kind: 'bridge' | 'tunnel'; label?; coordinates }
 interface CalculatedRoute {
   coordinates; distanceMeters; durationSeconds; instructions;
   structures?: RouteStructure[];   // the route's bridges and tunnels, in order
+  signals?: { coordinate; alongMeters }[];   // traffic signals it stops at, in order
   id?; profile?; label?; meta?: { edgeCount? }
 }
 interface RouteRequestOptions { waypoints?; profile?; alternatives?; allowExpressways?; signal? }
@@ -659,7 +662,7 @@ These are used throughout the loader, the adapter and the navigation service, so
 2. Multiply the cost of every edge just used by 6, and search again.
 3. Repeat up to `want × 3` times or until `want` routes (at most 3) are accepted.
 
-**Building the result:** expands the path's edges into coordinates, adds the original start and end points if they are more than 1 m from the snapped nodes (ridden at 5 m/s), measures the length, sums edge `seconds` for the duration, and generates instructions (`buildManeuversFromPath`, with the bridge and tunnel cues from `structureGuidance`, §8.8). It also returns the route's bridges and tunnels as `structures`. Labels are "Best match", "Alternative 1", and so on. Failures to connect throw `NoRoadPathError`.
+**Building the result:** expands the path's edges into coordinates, adds the original start and end points if they are more than 1 m from the snapped nodes (ridden at 5 m/s), measures the length, sums edge `seconds` for the duration, and generates instructions (`buildManeuversFromPath`, with the bridge and tunnel cues from `structureGuidance`, §8.8). It also returns the route's bridges and tunnels as `structures`, and its traffic signals as `signals` (`routeSignals`): every edge that pays a signal's delay, so one per junction, only signals facing the route's way, the same waits the duration counts; each with its distance along the route, which `mergeRoutes` offsets by the legs before it. Labels are "Best match", "Alternative 1", and so on. Failures to connect throw `NoRoadPathError`.
 
 ### 8.7 `routing-profiles.ts` — route types and costs
 
@@ -897,7 +900,7 @@ A saved trip keeps the map along its route, and an area (a city, district or sta
 
 | File | Contents |
 |---|---|
-| `types/navigation.ts` | `NavigationStatus`; `GpsFix` (lat, lon, accuracy, altitude, speed in m/s, course, timestamp); `CompassReading` (heading, accuracy level, `needsCalibration`, message); `NavigationState` (status, destination, waypoints, current instruction, distance to next maneuver, remaining distance and time, `offRoute`, message, progress, profile, alternatives, selected index, `showAllRoutes`). |
+| `types/navigation.ts` | `NavigationStatus`; `GpsFix` (lat, lon, accuracy, altitude, speed in m/s, course, timestamp); `CompassReading` (heading, accuracy level, `needsCalibration`, message); `NavigationState` (status, destination, waypoints, current instruction, distance to next maneuver, `signalAhead`, remaining distance and time, `offRoute`, message, progress, profile, alternatives, selected index, `showAllRoutes`). |
 | `types/route.ts` | `SavedRoute`, `TrailCompassRouteFile`, `Destination`, plus the converters `calculatedToSavedRoute` and `savedToCalculatedRoute`. |
 | `types/trip-stop.ts` | `StopKind` (destination, fuel, food, manual), `TripStop`, `PoiKind`, `PlaceHit`, `createTripStop`, label helpers, `formatCoordShort` (`"lat, lon"` to 4 decimal places), `itineraryWaypoints`, `itineraryEnd`. |
 | `types/region.ts` | `BoundingBox`, `RegionDownloadState`, `RegionPackage`. Used only by the offline stubs. |

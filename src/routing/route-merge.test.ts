@@ -19,7 +19,16 @@ describe('mergeRoutes', () => {
     expect(merged.coordinates).toHaveLength(4);
   });
 
+  it("measures every leg's signals from the start of the whole route", () => {
+    const merged = mergeRoutes([
+      { ...leg(0), signals: [{ coordinate: [0.5, 0], alongMeters: 40 }] },
+      { ...leg(1), signals: [{ coordinate: [1.2, 0], alongMeters: 20 }, { coordinate: [1.8, 0], alongMeters: 80 }] },
+    ]);
+    expect(merged.signals?.map((s) => s.alongMeters)).toEqual([40, 120, 180]);
+  });
+
   it('adds none when no leg has any', () => {
     expect(mergeRoutes([leg(0), leg(1)])).not.toHaveProperty('structures');
+    expect(mergeRoutes([leg(0), leg(1)])).not.toHaveProperty('signals');
   });
 });

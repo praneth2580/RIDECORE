@@ -1,4 +1,8 @@
-import type { InstructionStructure, TurnInstruction } from './routing-adapter';
+import type {
+  InstructionStructure,
+  RouteSignal,
+  TurnInstruction,
+} from './routing-adapter';
 
 /**
  * Picks the next turn instruction based on remaining distance along the route.
@@ -136,4 +140,50 @@ export function structureSign(instruction: TurnInstruction | undefined): Structu
       return null;
   }
   return { kind, action, label };
+}
+
+/** How far ahead the banner warns of a traffic signal. */
+export const SIGNAL_WARNING_M = 400;
+/**
+ * A signal this close to the next maneuver is at that junction: a wide
+ * junction's signal can stand 40 m before the turn, across a service lane.
+ * The same span the router treats as one junction (SIGNAL_CLUSTER_M).
+ */
+const SIGNAL_AT_MANEUVER_M = 50;
+/** GPS puts a rider waiting at the stop line a few metres either side of it. */
+const SIGNAL_PASSED_M = 8;
+
+export interface SignalAhead {
+  distanceMeters: number;
+  /** At the junction of the next maneuver ("Turn left", signal at the turn). */
+  atManeuver: boolean;
+}
+
+/**
+ * The next traffic signal within SIGNAL_WARNING_M of the rider, or null.
+ * `signals` are in route order. `maneuverAlongMeters` is where the next turn
+ * is (left out for the arrival, which isn't a turn).
+ */
+export function signalAhead(
+  signals: RouteSignal[] | undefined,
+  alongMeters: number,
+  maneuverAlongMeters?: number,
+): SignalAhead | null {
+  const next = signals?.find((s) => s.alongMeters > alongMeters - SIGNAL_PASSED_M);
+  if (!next) return null;
+  const distanceMeters = Math.max(0, next.alongMeters - alongMeters);
+  if (distanceMeters > SIGNAL_WARNING_M) return null;
+  return {
+    distanceMeters,
+    atManeuver:
+      maneuverAlongMeters != null &&
+      Math.abs(next.alongMeters - maneuverAlongMeters) <= SIGNAL_AT_MANEUVER_M,
+  };
+}
+
+/** "Signal in 180 m", "Signal at the turn", "Signal here". */
+export function signalWarningLabel(signal: SignalAhead): string {
+  if (signal.atManeuver) return 'Signal at the turn';
+  const distance = formatManeuverDistance(signal.distanceMeters);
+  return distance === 'Now' ? 'Signal here' : `Signal in ${distance}`;
 }

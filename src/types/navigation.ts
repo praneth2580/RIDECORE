@@ -4,6 +4,7 @@ import type {
   TurnInstruction,
 } from '../routing/routing-adapter';
 import type { RoutingProgress } from '../routing/routing-progress';
+import type { SignalAhead } from '../routing/turn-instructions';
 import type { RoutingProfileId } from '../routing/routing-profiles';
 
 export type NavigationStatus =
@@ -45,6 +46,8 @@ export interface NavigationState {
   waypoints?: Coordinate[];
   currentInstruction?: TurnInstruction;
   distanceToNextManeuverMeters?: number;
+  /** The next traffic signal on the route, while it's close (turn-instructions.ts). */
+  signalAhead?: SignalAhead;
   remainingDistanceMeters?: number;
   remainingDurationSeconds?: number;
   offRoute: boolean;

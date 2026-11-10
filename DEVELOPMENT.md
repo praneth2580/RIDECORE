@@ -104,6 +104,8 @@ src/
 
 **Bridges and flyovers.** A flyover leaves the road under it at a shallow angle, so turn angles alone never mention it. The road data keeps OSM's `bridge` and `tunnel` tags. At each fork on the route, `structure-guidance.ts` looks 300 m down every branch, and where one goes over a bridge or through a tunnel and the route's way doesn't (or the reverse), it adds "Keep right to take the flyover" or "Keep left to stay below Andheri Flyover", spoken like any turn. The banner adds a sign under it: a side-view picture of the fork with the route's road in bold, labelled "Take flyover", "Go below flyover", "Enter underpass" or "Skip underpass". The map gives bridges dark edges and a shadow, dashes tunnels, and marks the route's own bridges (rails and a name) and tunnels (a dashed stripe).
 
+**Traffic signals.** OSM's traffic signals come with the road data, and the router counts an average wait at each (once per junction). The route keeps the signals it stops at (`CalculatedRoute.signals`): the map puts a traffic light at each, and while navigating the banner warns of the next one within 400 m ("Signal in 180 m", or "Signal at the turn" when it's at the next turn's junction). Only where the signal is mapped in OSM; there is no live signal timing.
+
 **Navigation.** `navigation.service.ts` follows your position along the route. It detects when you're off route (it needs two bad fixes in a row) and reroutes, skipping stops you've already passed. Voice prompts (`voice-guidance.service.ts`) are timed to your speed. The screen stays on while you navigate, and the ride view goes full screen once you're moving.
 
 **GPS modes.** On Android the position comes from `RideLocationPlugin` (`LocationHub.java`), in the mode picked under Offline → Location (`location.service.ts`): **Satellites only** (Android's GPS provider: no data, no Google services), **Satellites + mobile data & Wi-Fi** (GPS and network providers, the GPS preferred while it has a fix; the default) or **Battery saver** (network only, about 100 m). Permission is still asked through `@capacitor/geolocation`. In a browser, the browser picks the source; Battery saver asks it for less accuracy.
@@ -180,6 +182,8 @@ Each colour's variable is `VITE_MAP_COLOR_`, then the group and name in capitals
 | `structures.routeBridge` | `#1a1205` | The rails along the route where it goes over a bridge |
 | `structures.routeTunnel` | `#ffffff` | The dashed stripe down the route through a tunnel or underpass |
 | `structures.label`, `structures.labelHalo` | `#3b2a0e`, `#ffffff` | Bridge and tunnel names along the route ("Andheri Flyover") |
+| `signals.housing`, `signals.outline` | `#1d1d1d`, `#ffffff` | The traffic light at each signal on the route, and in the banner's "signal ahead" warning |
+| `signals.red`, `signals.amber`, `signals.green` | `#ff4d4f`, `#ffb020`, `#2fcf6f` | Its three lamps |
 
 **Basemap colours** are unset by default, so Liberty shows as it comes. Each one covers a family of Liberty's layers (`BASEMAP_TARGETS`) and only replaces colours those layers already have. One colour replaces Liberty's zoom-dependent shading for that family. For anything finer, such as one layer, line widths or opacity, edit `src/offline/liberty-style.json`.
 
@@ -207,7 +211,7 @@ Add an entry to `MAP_THEME_PRESETS` in `src/theme/map-theme-core.ts`. A preset i
 
 ### Colours in code
 
-Read colours from `mapTheme` (`src/theme/map-theme.ts`), never a literal. `map.service.ts` draws with it, `buildMapStyle()` applies `basemap` to Liberty, and the UI uses it wherever it repeats a map colour (route option swatches, the traffic legend). For CSS, `src/main.tsx` sets the colours the stylesheet needs as `--tc-map-*` variables on `:root`: the rider dot (`.tc-position-marker`) and the Plan tab's stop icons (`.tc-plan-icon`) read them.
+Read colours from `mapTheme` (`src/theme/map-theme.ts`), never a literal. `map.service.ts` draws with it, `buildMapStyle()` applies `basemap` to Liberty, and the UI uses it wherever it repeats a map colour (route option swatches, the traffic legend). For CSS, `src/main.tsx` sets the colours the stylesheet needs as `--tc-map-*` variables on `:root`: the rider dot (`.tc-position-marker`), the Plan tab's stop icons (`.tc-plan-icon`) and the banner's signal warning (`.tc-nav-signal`) read them.
 
 The app's own interface colours are separate: they are the design tokens in `:root` of `src/index.css`.
 
