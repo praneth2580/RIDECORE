@@ -278,6 +278,7 @@ The Map tab's one card, in the dock, until the ride starts. It keeps the map fre
 #### `NavigationBanner.tsx`
 The status and action strip while navigating, paused or in ride view. `RouteProgress` and its icons are shared with `MapTripCard`.
 - **Text:** while rerouting, the progress label. During navigation, a turn arrow, the distance to it and the instruction.
+- **Flyover sign:** when the instruction is about a bridge or tunnel (`TurnInstruction.structure`, §8.8), a box under it with a side-view pictogram and a label from `structureSign` ("Take flyover", "Go below flyover", "Enter underpass", "Skip underpass", "Stay on flyover", "Exit flyover"). The pictogram shows the road that stays level and the one that climbs onto the flyover (or dips into the underpass): the route's is bold with an arrowhead, the other faint and dashed, and bridges stand on pillars. The turn arrow says left or right; the sign says up or down.
 - **Progress bar:** shown only when `percent` and `bytesTotal` are both known (a real byte count).
 - **Remaining:** distance, ETA and arrival time.
 - **Off route** flag, and a GPS warning when the signal is weak or lost.
@@ -418,7 +419,13 @@ Wraps every map operation so the UI never touches MapLibre directly. Every colou
   | `…recalc-link` | red dashed straight line | Rider → destination while a plan is in progress |
   | `…route-alts-hit` | 28 px, transparent | Large tap target for picking a route |
   | `…route-alts` | blue / violet / teal dashed | Alternative routes |
+  | `…route-bridge` | dark rails, 11 px, under the route | Where the route goes over a bridge or flyover |
   | `…route` | orange `#F5A623`, 5 px | The selected route. While recalculating it becomes faded, dashed and dark amber. |
+  | `…route-tunnel` | white dashed stripe on the route | Where the route goes through a tunnel or underpass |
+  | `…route-structure-label` | bold text beside the route, from zoom 13 | The bridge's or tunnel's name, "Flyover", "Bridge"… |
+
+  The three structure layers share the `…route-structures` source (`drawRoute(coordinates, index, structures)`) and hide while recalculating.
+- **Bridges and tunnels on the basemap:** as Liberty comes, a flyover looks exactly like the road under it. `emphasizeStructures` (`offline/structure-style.ts`, run by `buildMapStyle()`) gives road bridges dark edges 1.3× wider and adds a `bridge_shadow` layer (a soft shadow, offset the same way on screen however the map turns) below every bridge layer, and dashes the edges of road tunnels. Rail and path bridges are left alone.
 
 - Key methods: `drawRoute`, `drawAlternatives(routes, selected, showAll)`, `drawGhostRoute`, `drawRecalcLink`, `setRouteRecalculating`, `fitRoute`, `centerOn`, `resumeNavigationFollow`, `setDestination`, `setItineraryStops`, `clearRoute`, `clearItinerary`.
 
@@ -539,9 +546,12 @@ loadOsmNetworkForRoute:
 
 ```ts
 type Coordinate = [longitude, latitude];
-interface TurnInstruction { text; distanceMeters; maneuver? }
+interface InstructionStructure { kind: 'bridge' | 'tunnel'; action: 'take' | 'below' | 'avoid' | 'stay' | 'exit'; term }
+interface TurnInstruction { text; distanceMeters; maneuver?; structure?: InstructionStructure }
+interface RouteStructure { kind: 'bridge' | 'tunnel'; label?; coordinates }
 interface CalculatedRoute {
   coordinates; distanceMeters; durationSeconds; instructions;
+  structures?: RouteStructure[];   // the route's bridges and tunnels, in order
   id?; profile?; label?; meta?: { edgeCount? }
 }
 interface RouteRequestOptions { waypoints?; profile?; alternatives?; allowExpressways?; signal? }
@@ -603,7 +613,7 @@ The straight line between two far-apart places often crosses water or hills that
    - Other HTTP errors, bad JSON, or network errors: back off and switch mirror.
    - Backoff: 2 s, 4 s, 8 s (maximum 8 s). The wait can be aborted.
 5. **Download progress:** if `Content-Length` is present, the body is read as a stream and real byte progress is reported. Otherwise the progress is indeterminate.
-6. **Conversion (`overpassToNetwork`):** ways with geometry become GeoJSON `LineString` features with `highway`, `oneway`, `name`, `osm_id` and a `tags` subset (`ROAD_TAG_KEYS` in `road-attributes.ts`: lanes, maxspeed, surface, access keys, junction, …). Control nodes become `controls`, and restriction relations become `restrictions`. Access rules are applied by the graph engine, not here. The collection's `region.coverage` records what was really downloaded: `{kind: 'bbox'}`, or `{kind: 'corridor', samples, radiusMeters}` for corridor queries.
+6. **Conversion (`overpassToNetwork`):** ways with geometry become GeoJSON `LineString` features with `highway`, `oneway`, `name`, `osm_id` and a `tags` subset (`ROAD_TAG_KEYS` in `road-attributes.ts`: lanes, maxspeed, surface, access keys, junction, `bridge`, `tunnel` and their names, …). Control nodes become `controls`, and restriction relations become `restrictions`. Access rules are applied by the graph engine, not here. The collection's `region.coverage` records what was really downloaded: `{kind: 'bbox'}`, or `{kind: 'corridor', samples, radiusMeters}` for corridor queries.
 7. The result is cached and saved as a road pack in the background.
 
 ### 8.4 `overpass-scheduler.ts` — limiting concurrent requests (uncommitted)
@@ -634,7 +644,7 @@ These are used throughout the loader, the adapter and the navigation service, so
   - **Expressway:** `motorway`, `motorway_link`, `motorroad=yes` or `expressway=yes`, unless `motorcycle=yes`. The search skips these edges unless `allowExpressways` is set (the rider's "Expressways" toggle, off by default), and snapping skips nodes that only expressways touch.
   - **Speed:** class speed (§8.7), then a numeric `maxspeed` → `min(limit × 0.9, class × 1.2)`; 3+ lanes per direction ×1.15, 2 ×1.05, a single-lane two-way road ×0.75; unpaved ×0.55; bad smoothness ×0.7. Clamped to 3–30 m/s.
 - **Junction delays** are added to the time of edges *entering* a control node: signals 25 s, stop 8 s, give way 4 s, level crossing 25 s, toll booth 15 s. `traffic_signals:direction` / `direction` limit a control to one direction. Signals within 50 m of each other are one cluster, and an edge only pays when it enters a cluster from outside it, so a dual-carriageway junction counts once.
-- Each edge stores `meters`, `seconds` (ride time + delay), `delaySeconds`, `wayId`, `expressway` and `destinationOnly`. Edge IDs are `${osm_id}:${segmentIndex}:fwd|rev`.
+- Each edge stores `meters`, `seconds` (ride time + delay), `delaySeconds`, `wayId`, `expressway`, `destinationOnly`, and `structure` (`bridge`, `tunnel` or none, from `roadStructure`) with `structureName`. Edge IDs are `${osm_id}:${segmentIndex}:fwd|rev`.
 
 **Snapping:** nodes are also bucketed in a grid of 0.005° cells. `snapToNearestNode(point, maxMeters)` searches rings of cells outward from the point's cell and stops once no farther ring can hold a closer node, or the ring is beyond `maxMeters`. `coversPoints` requires both ends to be within 350 m of a road. `nearestRoadCoordinate(point, max)` is used for the wider 2.5 km and 12 km snaps.
 
@@ -649,7 +659,7 @@ These are used throughout the loader, the adapter and the navigation service, so
 2. Multiply the cost of every edge just used by 6, and search again.
 3. Repeat up to `want × 3` times or until `want` routes (at most 3) are accepted.
 
-**Building the result:** expands the path's edges into coordinates, adds the original start and end points if they are more than 1 m from the snapped nodes (ridden at 5 m/s), measures the length, sums edge `seconds` for the duration, and generates instructions (`buildManeuversFromPath`). Labels are "Best match", "Alternative 1", and so on. Failures to connect throw `NoRoadPathError`.
+**Building the result:** expands the path's edges into coordinates, adds the original start and end points if they are more than 1 m from the snapped nodes (ridden at 5 m/s), measures the length, sums edge `seconds` for the duration, and generates instructions (`buildManeuversFromPath`, with the bridge and tunnel cues from `structureGuidance`, §8.8). It also returns the route's bridges and tunnels as `structures`. Labels are "Best match", "Alternative 1", and so on. Failures to connect throw `NoRoadPathError`.
 
 ### 8.7 `routing-profiles.ts` — route types and costs
 
@@ -672,6 +682,16 @@ Walks the route coordinates and measures the change in bearing at each point:
 - Turns closer than 12 m to the previous one are merged.
 - The first instruction is relabelled `depart` ("Head toward destination"). An `arrive` instruction is added at the end.
 - Street names are **not** used, even though the OSM features include `name`.
+- **Cues** (`PathCue`, by path index) add maneuvers the angles miss. At a cue the text is "Keep left to …" (maneuver `slight left`), or the turn's own text when the path turns there anyway ("Turn left to stay below the flyover"). A cue is never merged into a nearby turn. A cue's `structure` (what it does about the bridge or tunnel) is copied onto the instruction for the banner's sign; it is kept in saved trips and route files, and `structureSign` ignores values it can't read.
+
+**Bridges and tunnels (`structure-guidance.ts`).** A flyover leaves the road below it at a shallow angle, so no turn is detected there, and on the map the two lines nearly overlap. At every fork on the route, the graph engine's `structureGuidance` walks each other way out for 300 m (`walkBranch`: the same OSM way while it goes on, else the road nearest the heading at the fork). `forkCue` then compares each branch with the route's next 300 m:
+- From the ground: if the route rises onto a bridge (or drops into a tunnel) and a branch within 50° of it doesn't, or the other way round, the fork gets a cue: "Keep right to take the flyover", "Keep left to stay below Sion Flyover", "Turn left to avoid the underpass".
+- Already on a flyover: "Keep left to exit the flyover" for a ramp that comes down within 300 m, "Keep right to stay on the flyover" when the route doesn't.
+- **Side:** whether the route bears right or left of that branch, measured 40 m past the fork. No side is given when branches that differ lie on both sides of the route.
+- **Wording:** a bridge still within 80 m of the other road is a "flyover" (a tunnel an "underpass"); otherwise "bridge" / "tunnel". `bridge:name` / `tunnel:name`, or a way name that names the structure ("Andheri Flyover"), is used instead.
+- The same cue isn't repeated within 300 m: a flyover with several slip roads onto it.
+- `routeStructures` joins the route's bridge and tunnel edges into `structures`, labelled with the name, the word the cue used ("Flyover"), or "Bridge" / "Tunnel" when longer than 100 m. They are drawn along the route (§7.3), merged across legs (`route-merge.ts`), and kept in saved trips and route files.
+- Road packs saved before the bridge and tunnel tags were kept still route, but give no cues. `PACK_SCHEMA` was not bumped for this, because that would make every saved pack unusable offline.
 
 ### 8.9 `turn-instructions.ts` and `route-matcher.ts`
 
@@ -1055,7 +1075,8 @@ Each fix below is covered by tests in `src/routing/*.test.ts` (`npm test`).
 5. **`sharp` is not a declared dependency.** `generate-icons.mjs` needs it, but today it is installed only indirectly (through `@jansoft/mbujkanji-valhalla-wasm` → `next`). Add it to `devDependencies`.
 6. **`release.mjs` needs `android/app/src/main/res/xml/config.xml`, which is gitignored.** It exists only after a `cap sync`, so a fresh clone fails at the version-bump step. The script also supports a token embedded in the `origin` URL, which means storing a credential in `.git/config`.
 7. **Releases ship a debug APK.**
-8. **`npm install <package>` fails with ERESOLVE.** `@jansoft/mbujkanji-valhalla-wasm` depends on `@vitest/browser-*@latest`, which wants a different `vitest` than the project's. Adding a package currently needs `--legacy-peer-deps`.
+8. **Missing a flyover cue isn't noticed until the roads part.** GPS can't tell a flyover from the service road under it, so a rider who takes the wrong one is matched to the route until the two roads are tens of metres apart, and only then rerouted.
+9. **`npm install <package>` fails with ERESOLVE.** `@jansoft/mbujkanji-valhalla-wasm` depends on `@vitest/browser-*@latest`, which wants a different `vitest` than the project's. Adding a package currently needs `--legacy-peer-deps`.
 
 ---
 

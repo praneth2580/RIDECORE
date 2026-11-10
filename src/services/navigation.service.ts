@@ -258,7 +258,7 @@ export class NavigationService {
       index,
       this.state.showAllRoutes === true,
     );
-    mapService.drawRoute(route.coordinates, index);
+    mapService.drawRoute(route.coordinates, index, route.structures);
     const next = selectNextInstruction(route.instructions, 0);
     this.setState({
       ...this.state,
@@ -284,7 +284,7 @@ export class NavigationService {
       pick,
       false,
     );
-    mapService.drawRoute(route.coordinates, pick);
+    mapService.drawRoute(route.coordinates, pick, route.structures);
     mapService.fitRoute(route.coordinates);
 
     const next = selectNextInstruction(route.instructions, 0);
@@ -327,7 +327,7 @@ export class NavigationService {
         name: `Stop ${i + 1}`,
       })),
     );
-    mapService.drawRoute(calculated.coordinates, 0);
+    mapService.drawRoute(calculated.coordinates, 0, calculated.structures);
     mapService.fitRoute(calculated.coordinates);
 
     const next = selectNextInstruction(calculated.instructions, 0);
@@ -489,7 +489,7 @@ export class NavigationService {
         0,
         showAll,
       );
-      mapService.drawRoute(this.route.coordinates, 0);
+      mapService.drawRoute(this.route.coordinates, 0, this.route.structures);
       if (!showAll) {
         mapService.fitRoute(this.route.coordinates);
       }
@@ -572,7 +572,7 @@ export class NavigationService {
       index,
       showAll,
     );
-    mapService.drawRoute(this.route.coordinates, index);
+    mapService.drawRoute(this.route.coordinates, index, this.route.structures);
     if (status === 'choosing') {
       mapService.fitRoute(this.route.coordinates);
     }
@@ -755,7 +755,7 @@ export class NavigationService {
         0,
         false,
       );
-      mapService.drawRoute(this.route.coordinates, 0);
+      mapService.drawRoute(this.route.coordinates, 0, this.route.structures);
       const next = selectNextInstruction(this.route.instructions, 0);
       // Stay in navigation mode after a mid-ride recalculation.
       this.setState({
@@ -856,7 +856,7 @@ export class NavigationService {
         index,
         false,
       );
-      mapService.drawRoute(this.route.coordinates, index);
+      mapService.drawRoute(this.route.coordinates, index, this.route.structures);
       this.setState({
         ...this.state,
         status: 'choosing',

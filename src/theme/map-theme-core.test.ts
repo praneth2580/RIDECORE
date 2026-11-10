@@ -105,6 +105,7 @@ describe('resolveMapTheme', () => {
   it('names a variable for every colour', () => {
     expect(mapColorEnvName('route', 'recalcLink')).toBe('VITE_MAP_COLOR_ROUTE_RECALC_LINK');
     expect(mapColorEnvName('basemap', 'labelHalo')).toBe('VITE_MAP_COLOR_BASEMAP_LABEL_HALO');
+    expect(mapColorEnvName('structures', 'bridgeCasing')).toBe('VITE_MAP_COLOR_STRUCTURES_BRIDGE_CASING');
     for (const token of BASEMAP_TOKENS) {
       const { theme } = resolveMapTheme({ [mapColorEnvName('basemap', token)]: 'red' });
       expect(theme.basemap[token]).toBe('red');

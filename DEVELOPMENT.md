@@ -102,6 +102,8 @@ src/
 
 **Routing.** Routes are calculated on the phone, never by an online routing API. For a long trip, the app first downloads the major roads (motorway, trunk and primary) in 0.5° tiles around the trip. It finds the main path on them, then downloads local streets along that path to refine each leg. The roads come from public Overpass servers through `src/routing/overpass-client.ts`, which handles retries, a server that never answers and server cooldowns. Downloaded areas are kept in memory and saved on the phone as "road packs", so planning again in the same area is quick. Valhalla WASM is used instead only if a tile archive is bundled; none is shipped.
 
+**Bridges and flyovers.** A flyover leaves the road under it at a shallow angle, so turn angles alone never mention it. The road data keeps OSM's `bridge` and `tunnel` tags. At each fork on the route, `structure-guidance.ts` looks 300 m down every branch, and where one goes over a bridge or through a tunnel and the route's way doesn't (or the reverse), it adds "Keep right to take the flyover" or "Keep left to stay below Andheri Flyover", spoken like any turn. The banner adds a sign under it: a side-view picture of the fork with the route's road in bold, labelled "Take flyover", "Go below flyover", "Enter underpass" or "Skip underpass". The map gives bridges dark edges and a shadow, dashes tunnels, and marks the route's own bridges (rails and a name) and tunnels (a dashed stripe).
+
 **Navigation.** `navigation.service.ts` follows your position along the route. It detects when you're off route (it needs two bad fixes in a row) and reroutes, skipping stops you've already passed. Voice prompts (`voice-guidance.service.ts`) are timed to your speed. The screen stays on while you navigate, and the ride view goes full screen once you're moving.
 
 **GPS modes.** On Android the position comes from `RideLocationPlugin` (`LocationHub.java`), in the mode picked under Offline → Location (`location.service.ts`): **Satellites only** (Android's GPS provider: no data, no Google services), **Satellites + mobile data & Wi-Fi** (GPS and network providers, the GPS preferred while it has a fix; the default) or **Battery saver** (network only, about 100 m). Permission is still asked through `@capacitor/geolocation`. In a browser, the browser picks the source; Battery saver asks it for less accuracy.
@@ -173,6 +175,11 @@ Each colour's variable is `VITE_MAP_COLOR_`, then the group and name in capitals
 | `markers.stop` | `#7b8cff` | A stop dropped on the map |
 | `markers.outline` | `#1a1205` | The edge of pins and icons, and the disc in a pin |
 | `markers.glyph` | `#f5f0e6` | The dot or letter in a pin's disc |
+| `structures.bridgeCasing` | `#73655a` | The edges of bridges and flyovers on the basemap, so they stand out from the road below |
+| `structures.bridgeShadow` | `rgba(40, 30, 20, 0.3)` | The soft shadow under a bridge |
+| `structures.routeBridge` | `#1a1205` | The rails along the route where it goes over a bridge |
+| `structures.routeTunnel` | `#ffffff` | The dashed stripe down the route through a tunnel or underpass |
+| `structures.label`, `structures.labelHalo` | `#3b2a0e`, `#ffffff` | Bridge and tunnel names along the route ("Andheri Flyover") |
 
 **Basemap colours** are unset by default, so Liberty shows as it comes. Each one covers a family of Liberty's layers (`BASEMAP_TARGETS`) and only replaces colours those layers already have. One colour replaces Liberty's zoom-dependent shading for that family. For anything finer, such as one layer, line widths or opacity, edit `src/offline/liberty-style.json`.
 

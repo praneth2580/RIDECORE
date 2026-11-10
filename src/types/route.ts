@@ -1,11 +1,12 @@
 import type {
   CalculatedRoute,
   Coordinate,
+  RouteStructure,
   TurnInstruction,
 } from '../routing/routing-adapter';
 import type { RoutingProfileId } from '../routing/routing-profiles';
 
-export type { Coordinate, TurnInstruction };
+export type { Coordinate, RouteStructure, TurnInstruction };
 
 /**
  * Names for a trip's destination and stops (in `waypoints` order), so a
@@ -30,6 +31,8 @@ export interface SavedRoute {
   distanceMeters: number;
   durationSeconds: number;
   instructions: TurnInstruction[];
+  /** Bridges and tunnels on the route; absent on trips saved before they were kept. */
+  structures?: RouteStructure[];
   profile?: RoutingProfileId;
   label?: string;
   /** Absent on trips saved before names were kept. */
@@ -81,6 +84,7 @@ export function calculatedToSavedRoute(
     distanceMeters: route.distanceMeters,
     durationSeconds: route.durationSeconds,
     instructions: route.instructions,
+    ...(route.structures?.length ? { structures: route.structures } : {}),
     profile: route.profile,
     label: route.label,
     ...(extras?.places ? { places: extras.places } : {}),
@@ -94,6 +98,7 @@ export function savedToCalculatedRoute(saved: SavedRoute): CalculatedRoute {
     distanceMeters: saved.distanceMeters,
     durationSeconds: saved.durationSeconds,
     instructions: saved.instructions,
+    ...(saved.structures?.length ? { structures: saved.structures } : {}),
     profile: saved.profile,
     label: saved.label ?? saved.name,
   };

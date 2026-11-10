@@ -1,4 +1,4 @@
-import type { Coordinate } from './routing-adapter';
+import type { Coordinate, RouteStructure } from './routing-adapter';
 import type { SavedPlaces, SavedRoute, TrailCompassRouteFile } from '../types/route';
 
 export const ROUTE_FILE_FORMAT = 'trailcompass-route' as const;
@@ -146,10 +146,35 @@ function normalizeSavedRoute(route: SavedRoute): SavedRoute {
     distanceMeters: Number(route.distanceMeters) || 0,
     durationSeconds: Number(route.durationSeconds) || 0,
     instructions: Array.isArray(route.instructions) ? route.instructions : [],
+    ...(structuresFor(route) ? { structures: structuresFor(route) } : {}),
     profile: route.profile,
     label: route.label,
     ...(placesFor(route) ? { places: placesFor(route) } : {}),
   };
+}
+
+/** The route's bridges and tunnels from a file, keeping only well-formed ones. */
+function structuresFor(route: SavedRoute): RouteStructure[] | undefined {
+  const raw = route.structures as unknown;
+  if (!Array.isArray(raw)) return undefined;
+  const isPoint = (c: unknown) =>
+    Array.isArray(c) && c.length >= 2 && Number.isFinite(c[0]) && Number.isFinite(c[1]);
+  const structures = raw.flatMap((s): RouteStructure[] => {
+    if (!s || typeof s !== 'object') return [];
+    const { kind, label, coordinates } = s as Record<string, unknown>;
+    if (kind !== 'bridge' && kind !== 'tunnel') return [];
+    if (!Array.isArray(coordinates) || coordinates.length < 2 || !coordinates.every(isPoint)) {
+      return [];
+    }
+    return [
+      {
+        kind,
+        ...(typeof label === 'string' && label.trim() ? { label: label.slice(0, 80) } : {}),
+        coordinates: coordinates as Coordinate[],
+      },
+    ];
+  });
+  return structures.length > 0 ? structures : undefined;
 }
 
 function validDate(value: unknown): string | undefined {

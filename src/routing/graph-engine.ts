@@ -1,19 +1,29 @@
 import type { CalculatedRoute, Coordinate } from './routing-adapter';
 import {
+  bearingDegrees,
   haversineMeters,
   keyForCoordinate,
   polylineLengthMeters,
   toRad,
+  turnAngleDegrees,
 } from './geo';
-import { buildManeuversFromPath } from './maneuver-builder';
+import { buildManeuversFromPath, type PathCue } from './maneuver-builder';
 import { MinHeap } from './min-heap';
 import type { NetworkCoverage } from './network-coverage';
 import {
   CONTROL_DELAY_SECONDS,
   roadAttributes,
+  roadStructure,
+  structureName,
   type NetworkControl,
+  type RoadStructure,
   type RoadTags,
 } from './road-attributes';
+import {
+  STRUCTURE_LOOKAHEAD_M,
+  forkCue,
+  routeStructures,
+} from './structure-guidance';
 import {
   edgeCost,
   minCostPerMeter,
@@ -38,6 +48,14 @@ const SIGNAL_CLUSTER_M = 50;
 const SIGNAL_CELL_DEG = 0.001;
 /** Access=destination roads: fine to start/end on, poor as a through route. */
 const DESTINATION_ONLY_PENALTY = 5;
+/**
+ * Following a branch past a junction: the road nearest the way the rider was
+ * heading at the fork, if within this, so a short connector jogging onto a
+ * service road still counts as going on ahead.
+ */
+const MAX_CONTINUATION_TURN_DEG = 90;
+/** …and never doubling back on the step just walked. */
+const MAX_STEP_TURN_DEG = 120;
 
 interface LineStringGeometry {
   type: 'LineString';
@@ -101,6 +119,8 @@ interface GraphEdge {
   highway: string;
   expressway: boolean;
   destinationOnly: boolean;
+  structure: RoadStructure | null;
+  structureName: string | null;
   geometry: Coordinate[];
 }
 
@@ -354,6 +374,7 @@ export class OfflineGraphEngine {
     const coordinates: Coordinate[] = [
       this.nodes.get(found.startKey)!.coordinate,
     ];
+    const guidance = this.structureGuidance(found);
     let seconds = 0;
     for (const edge of found.edges) {
       for (let j = 1; j < edge.geometry.length; j++) {
@@ -363,9 +384,11 @@ export class OfflineGraphEngine {
     }
 
     // Snapped-on stubs from the pin to the road ride at a crawl.
+    let cues = guidance.cues;
     if (haversineMeters(start, coordinates[0]!) > 1) {
       seconds += haversineMeters(start, coordinates[0]!) / 5;
       coordinates.unshift(start);
+      cues = new Map([...cues].map(([index, cue]) => [index + 1, cue]));
     }
     const last = coordinates[coordinates.length - 1]!;
     if (haversineMeters(end, last) > 1) {
@@ -377,7 +400,7 @@ export class OfflineGraphEngine {
     }
 
     const distanceMeters = polylineLengthMeters(coordinates);
-    const instructions = buildManeuversFromPath(coordinates);
+    const instructions = buildManeuversFromPath(coordinates, cues);
 
     return {
       id: `route-${profile}-${index}`,
@@ -387,8 +410,114 @@ export class OfflineGraphEngine {
       distanceMeters,
       durationSeconds: Math.max(30, Math.round(seconds)),
       instructions,
+      structures: guidance.structures,
       meta: { edgeCount: found.edges.length },
     };
+  }
+
+  /**
+   * Cues for the forks where the route and another way out differ in going
+   * over a bridge or through a tunnel (keyed by path index: the node before
+   * edge k is index k), and the route's own bridges and tunnels.
+   */
+  private structureGuidance(found: FoundPath): {
+    cues: Map<number, PathCue>;
+    structures: ReturnType<typeof routeStructures>;
+  } {
+    const { edges, startKey } = found;
+    const cues = new Map<number, PathCue>();
+    const terms = new Map<number, string>();
+    let last: { purpose: string; atMeters: number } | null = null;
+    let along = edges[0]?.meters ?? 0;
+
+    for (let k = 1; k < edges.length; k++) {
+      const arriving = edges[k - 1]!;
+      const chosen = edges[k]!;
+      const forkKey = arriving.to;
+      const cameFrom = k >= 2 ? edges[k - 2]!.to : startKey;
+      const others = (this.nodes.get(forkKey)?.edges ?? []).filter(
+        (e) => e.id !== chosen.id && e.to !== cameFrom && e.to !== chosen.to,
+      );
+      if (others.length > 0) {
+        const heading = edgeBearing(arriving);
+        const ahead: GraphEdge[] = [];
+        for (let j = k, m = 0; j < edges.length && m < STRUCTURE_LOOKAHEAD_M; j++) {
+          ahead.push(edges[j]!);
+          m += edges[j]!.meters;
+        }
+        const cue = forkCue(
+          arriving,
+          ahead,
+          others.map((e) => this.walkBranch(e, forkKey, heading, STRUCTURE_LOOKAHEAD_M)),
+        );
+        // A flyover with several slip roads onto it: say so once.
+        const repeat =
+          cue != null &&
+          last != null &&
+          last.purpose === cue.purpose &&
+          along - last.atMeters < STRUCTURE_LOOKAHEAD_M;
+        if (cue && !repeat) {
+          cues.set(k, { side: cue.side, purpose: cue.purpose, structure: cue.structure });
+          if (cue.labelStep != null) terms.set(k + cue.labelStep, cue.structure.term);
+          last = { purpose: cue.purpose, atMeters: along };
+        }
+      }
+      along += chosen.meters;
+    }
+
+    return { cues, structures: routeStructures(edges, terms) };
+  }
+
+  /**
+   * The road on from `first` as far as `maxMeters`: the same OSM way while
+   * it goes on, else the road nearest `heading` (the way the rider was going
+   * at the fork). Stops where every way on is a turn off, or at a loop.
+   */
+  private walkBranch(
+    first: GraphEdge,
+    fromKey: string,
+    heading: number,
+    maxMeters: number,
+  ): GraphEdge[] {
+    const steps = [first];
+    const visited = new Set([fromKey]);
+    let meters = first.meters;
+    let edge = first;
+    let cameFrom = fromKey;
+    while (meters < maxMeters && !visited.has(edge.to)) {
+      visited.add(edge.to);
+      const next = this.continuation(edge, cameFrom, heading);
+      if (!next) break;
+      steps.push(next);
+      meters += next.meters;
+      cameFrom = edge.to;
+      edge = next;
+    }
+    return steps;
+  }
+
+  private continuation(
+    arrived: GraphEdge,
+    cameFrom: string,
+    heading: number,
+  ): GraphEdge | null {
+    const node = this.nodes.get(arrived.to);
+    if (!node) return null;
+    const stepHeading = edgeBearing(arrived);
+    let best: GraphEdge | null = null;
+    let bestTurn = MAX_CONTINUATION_TURN_DEG;
+    for (const edge of node.edges) {
+      if (edge.to === cameFrom) continue;
+      if (edge.wayId === arrived.wayId && edge.wayId !== -1) return edge;
+      const bearing = edgeBearing(edge);
+      if (Math.abs(turnAngleDegrees(stepHeading, bearing)) > MAX_STEP_TURN_DEG) continue;
+      const turn = Math.abs(turnAngleDegrees(heading, bearing));
+      if (turn <= bestTurn) {
+        best = edge;
+        bestTurn = turn;
+      }
+    }
+    return best;
   }
 
   private addLineFeature(feature: NetworkFeature): void {
@@ -404,6 +533,8 @@ export class OfflineGraphEngine {
     }
     const road = roadAttributes(highway, tags);
     if (road.access === 'no' || road.oneway === 'closed') return;
+    const structure = roadStructure(tags);
+    const namedAs = structure ? structureName(structure, tags, props?.name) : null;
 
     const forwardOnly = road.oneway === 'forward';
     const reverseOnly = road.oneway === 'backward';
@@ -445,6 +576,8 @@ export class OfflineGraphEngine {
           highway,
           expressway: road.expressway,
           destinationOnly: road.access === 'destination',
+          structure,
+          structureName: namedAs,
           geometry,
         };
       };
@@ -650,6 +783,10 @@ export class OfflineGraphEngine {
     edges.reverse();
     return { edges, startKey };
   }
+}
+
+function edgeBearing(edge: GraphEdge): number {
+  return bearingDegrees(edge.geometry[0]!, edge.geometry[edge.geometry.length - 1]!);
 }
 
 function stateNode(state: string): string {

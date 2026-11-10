@@ -5,7 +5,9 @@ import {
   formatInstructionBanner,
   formatManeuverDistance,
   maneuverKind,
+  structureSign,
   type ManeuverKind,
+  type StructureSign,
 } from '../routing/turn-instructions';
 
 interface NavigationBannerProps {
@@ -74,6 +76,8 @@ export function NavigationBanner({
   const maneuver =
     (navMode || rideMode) && !working ? state.currentInstruction : undefined;
   const maneuverDistance = state.distanceToNextManeuverMeters;
+  // Up onto the flyover or along the road below it, at a glance.
+  const sign = maneuver ? structureSign(maneuver) : null;
 
   const bannerClass = showPlan
     ? 'tc-nav-banner tc-nav-banner-idle'
@@ -104,6 +108,7 @@ export function NavigationBanner({
                 </p>
               ) : null}
               <p className="tc-nav-instruction">{maneuver.text}</p>
+              {sign ? <StructureSignBadge sign={sign} /> : null}
             </div>
           </div>
         ) : (
@@ -333,6 +338,49 @@ function ManeuverIcon({ kind }: { kind: ManeuverKind }) {
         ))}
       </svg>
     </span>
+  );
+}
+
+/** Side view: where the pictogram's two roads sit and part. */
+const SIGN = { high: 8, low: 23, start: 3, split: 11, rampEnd: 21, end: 44 };
+
+/**
+ * A side view of the fork: the road that stays level and the one that
+ * climbs onto the flyover (or dips into the underpass). The route's road is
+ * bold with an arrowhead; the other is faint and dashed. Bridges stand on
+ * pillars.
+ */
+function StructureSignBadge({ sign }: { sign: StructureSign }) {
+  const { high, low, start, split, rampEnd, end } = SIGN;
+  const fromGround = sign.action === 'take' || sign.action === 'below' || sign.action === 'avoid';
+  // A flyover starts low and climbs; an underpass starts on the surface and dips.
+  // Already on one, it is the other way round.
+  const startsHigh = (sign.kind === 'tunnel') === fromGround;
+  const from = startsHigh ? high : low;
+  const to = startsHigh ? low : high;
+  const changes = sign.action === 'take' || sign.action === 'exit';
+  const level = (x: number) => `M${x} ${from} H${end}`;
+  const change = (x: number) => `M${x} ${from} ${x < split ? `H${split} ` : ''}L${rampEnd} ${to} H${end}`;
+  const routeEnd = changes ? to : from;
+  // Under the raised road: the ramp's deck from the ground, or the level deck when on it.
+  const deckX = fromGround ? [27, 38] : [29, 39];
+  return (
+    <p className="tc-nav-structure" data-kind={sign.kind} data-action={sign.action}>
+      <svg className="tc-nav-structure-icon" viewBox="0 0 48 30" fill="none" aria-hidden>
+        {sign.kind === 'bridge'
+          ? deckX.map((x) => (
+              <path key={x} d={`M${x} ${high + 1.5}V${low}`} className="tc-nav-structure-pillar" />
+            ))
+          : null}
+        <path d={changes ? level(split) : change(split)} className="tc-nav-structure-other" />
+        <path d={changes ? change(start) : level(start)} className="tc-nav-structure-route" />
+        <path
+          d={`M${end - 5} ${routeEnd - 4.5}L${end} ${routeEnd}L${end - 5} ${routeEnd + 4.5}`}
+          className="tc-nav-structure-route"
+        />
+      </svg>
+      <span>{sign.label}</span>
+    </p>
   );
 }
 

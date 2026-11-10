@@ -3,6 +3,7 @@ import type { TurnInstruction } from './routing-adapter';
 import {
   formatManeuverDistance,
   maneuverKind,
+  structureSign,
   selectNextInstruction,
   selectNextInstructionIndex,
 } from './turn-instructions';
@@ -86,5 +87,40 @@ describe('maneuverKind', () => {
 
   it('uses the first side named', () => {
     expect(kind('Turn right, then turn left')).toBe('right');
+  });
+});
+
+describe('structureSign', () => {
+  const at = (structure: unknown): TurnInstruction => ({
+    text: 'Keep right',
+    distanceMeters: 100,
+    maneuver: 'slight right',
+    structure: structure as TurnInstruction['structure'],
+  });
+
+  it('says whether to go up onto the flyover or along the road below', () => {
+    expect(structureSign(at({ kind: 'bridge', action: 'take', term: 'flyover' }))?.label).toBe('Take flyover');
+    expect(structureSign(at({ kind: 'bridge', action: 'below', term: 'flyover' }))?.label).toBe('Go below flyover');
+    expect(structureSign(at({ kind: 'bridge', action: 'avoid', term: 'bridge' }))?.label).toBe('Skip bridge');
+    expect(structureSign(at({ kind: 'bridge', action: 'stay', term: 'flyover' }))?.label).toBe('Stay on flyover');
+    expect(structureSign(at({ kind: 'bridge', action: 'exit', term: 'flyover' }))?.label).toBe('Exit flyover');
+  });
+
+  it('and into the underpass or past it', () => {
+    expect(structureSign(at({ kind: 'tunnel', action: 'take', term: 'underpass' }))).toEqual({
+      kind: 'tunnel',
+      action: 'take',
+      label: 'Enter underpass',
+    });
+    expect(structureSign(at({ kind: 'tunnel', action: 'avoid', term: 'underpass' }))?.label).toBe('Skip underpass');
+    expect(structureSign(at({ kind: 'tunnel', action: 'stay', term: 'tunnel' }))?.label).toBe('Stay in tunnel');
+  });
+
+  it('shows nothing for other turns or what a file got wrong', () => {
+    expect(structureSign(undefined)).toBeNull();
+    expect(structureSign(at(undefined))).toBeNull();
+    expect(structureSign(at({ kind: 'ferry', action: 'take', term: 'ferry' }))).toBeNull();
+    expect(structureSign(at({ kind: 'bridge', action: 'constructor', term: 'flyover' }))).toBeNull();
+    expect(structureSign(at({ kind: 'bridge', action: 'take' }))?.label).toBe('Take bridge');
   });
 });

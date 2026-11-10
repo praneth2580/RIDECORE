@@ -49,3 +49,27 @@ describe('route files keep stop names', () => {
     expect(parseRouteFile(serializeRouteFile(trip())).places).toBeUndefined();
   });
 });
+
+describe('route files keep bridges and tunnels', () => {
+  const structures = [
+    { kind: 'bridge', label: 'Sion Flyover', coordinates: [[72.86, 19.04], [72.87, 19.04]] },
+    { kind: 'tunnel', coordinates: [[73.3, 18.7], [73.31, 18.71]] },
+  ];
+
+  it('reads them back', () => {
+    const saved = { ...trip(), structures } as SavedRoute;
+    expect(parseRouteFile(serializeRouteFile(saved)).structures).toEqual(structures);
+  });
+
+  it('drops malformed ones and reads older files without any', () => {
+    const odd = [
+      ...structures,
+      { kind: 'ferry', coordinates: [[0, 0], [1, 1]] },
+      { kind: 'bridge', coordinates: [[0, 0]] },
+      { kind: 'bridge', coordinates: [[0, 0], ['x', 1]] },
+    ];
+    const saved = { ...trip(), structures: odd } as unknown as SavedRoute;
+    expect(parseRouteFile(serializeRouteFile(saved)).structures).toEqual(structures);
+    expect(parseRouteFile(serializeRouteFile(trip())).structures).toBeUndefined();
+  });
+});
