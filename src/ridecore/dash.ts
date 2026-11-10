@@ -7,13 +7,16 @@ export interface DashShows {
   speed: boolean;
   /** The map. Turns still show without it. */
   map: boolean;
-  /** Time to go, the ride or the clock, under the map (beside it in landscape). */
+  /**
+   * The dial right of the map in landscape, a line under it in portrait: the trip, the
+   * ride, what plays, the weather or the time, tapped through (faces.ts).
+   */
   trip: boolean;
   /** The "Where to?" button on the map when there's no trip. */
   whereTo: boolean;
-  /** What plays, under the map (in the right dial in landscape) when there's no trip or ride. */
+  /** What plays, with its cover and keys, as one of that dial's faces. */
   music: boolean;
-  /** The weather there, when nothing else is: no trip, ride or music. */
+  /** The weather there, as one of that dial's faces. */
   weather: boolean;
   /** The top line's time and date. */
   clock: boolean;

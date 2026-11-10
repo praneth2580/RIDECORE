@@ -73,8 +73,16 @@ as on Android. Left and right, from the dash:
    `src/ridecore/dash.ts`); what's off gives its room
    to the rest. With the map
    off the next turn still shows, under the speed. The readout under the map (the right
-   dial in landscape) shows the most useful thing: the trip, else the ride, else what
-   plays (tap it to pause or play), else the weather, else the time.
+   dial in landscape, `components/TripReadout.tsx`) has faces, tapped through with dots
+   to show which: the trip and the ride while there's one, what plays while there's
+   something, the weather, the time (`src/ridecore/faces.ts`). The one tapped to stays,
+   across restarts; something starting shows itself (a trip always, a ride or music
+   unless a trip is under way), and a face that goes hands over to the first there is,
+   in that order. What plays shows its cover (the whole dial in landscape, darkened
+   under the words), song and artist, bars moving while it plays, and keys for back,
+   play or pause, and next; those keys work the music instead of turning the face. A
+   small dial (most phones in landscape) drops Back, which the Music screen still has,
+   and the smallest also the artist.
 2. Where to (`screens/GoPage.tsx`): typing on a mounted phone is slow, so places picked
    before (from search or these keys) come first, one tap to go again (`src/ridecore/recent.ts`, the last
    6; hold one to forget it), then saved trips as cards, then search (the keyboard's
@@ -90,10 +98,17 @@ as on Android. Left and right, from the dash:
    and name, the total in the heading; tap one to see it on the map.
 
 Up and down, on the dash only, as on a phone's home screen: swipe down for settings,
-swipe up for the phone's apps (`screens/AppsPage.tsx`). Tap an app to open it; hold one
-to pin it to the top. The way back is the way in: each has a Dash handle on its edge
-toward the dash (`Page`'s `handle`), outside its list, to swipe or tap however far down
-the list is, and sideways does nothing there (the outer pager is held on the dash).
+swipe up for the apps the rider picked, and up again for all the phone's apps. Apps
+(`screens/AppsPage.tsx`) holds up to `PICKS_MAX` (8) as big keys in a fixed grid, two
+across in portrait and four in landscape, so a key never moves as others come and go;
+an "All apps" key fills the next slot while there's room. All apps
+(`screens/AllAppsPage.tsx`) is the drawer, A to Z, with the picked ones marked lime. Tap
+an app to open it; hold one, in either screen, to put it on Apps or take it off. The
+picks are kept in picked order (`apps.ts`, under the old pinned-apps key, so earlier pins
+became the first picks). The way back is the way in: each has a handle on its edge toward
+the dash (`Page`'s `handle`: Dash, or Apps from All apps), outside its list, to swipe or
+tap however far down the list is, and sideways does nothing there (the outer pager is
+held on the dash).
 
 As a launcher: Home always brings the dash back (a route being chosen stays chosen),
 Back closes what's open and then goes back to the dash, and nothing is behind it. Left
@@ -148,8 +163,9 @@ RIDECORE is made for a phone kept for it alone, as that phone's home screen.
 - **Home screen.** RIDECORE can be Android's home app: Settings → Home app,
   then pick RIDECORE. Home and switching the phone on then open it, Home pressed in
   RIDECORE goes back to the dash, and Back stops at the dashboard.
-- **The phone's apps.** Swiping up from the dash lists them, as a launcher's app drawer
-  does; tap one to open it, hold one to pin it to the top. `RideCoreDevicePlugin` lists
+- **The phone's apps.** Swiping up from the dash shows the ones picked for riding, and
+  again the app drawer with them all; tap one to open it, hold one to pick it or drop it
+  (up to 8). `RideCoreDevicePlugin` lists
   them (`listApps`, icons as PNG data URLs), opens them (`openApp`), and tells the web
   side when Home is pressed (the `home` event). In a browser there are none to list.
 - **Signal and headset.** `RideCoreDevicePlugin` reports the SIM, its signal bars, Wi-Fi

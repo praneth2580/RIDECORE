@@ -1265,14 +1265,39 @@ button.rc-banner {
 
 /* ── The trip: a line in portrait, a dial in landscape ────── */
 
-/* What plays is its own play and pause. */
-button.rc-trip {
-  border: none;
-  background: transparent;
-  color: var(--rc-text);
-  font: inherit;
-  text-align: left;
+/* More than one face: a tap steps to the next, with a moment's dim to show it took. */
+.rc-trip[data-steps] {
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 120ms ease;
+}
+
+.rc-trip[data-steps]:active {
+  opacity: 0.75;
+}
+
+/* Which face, of how many: the pagers' dots, small. */
+.rc-trip-dots {
+  grid-area: dots;
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rc-trip-dots li {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #3a3b41;
+  transition: width 200ms ease, background 200ms ease;
+}
+
+.rc-trip-dots li[data-on] {
+  width: 14px;
+  background: var(--rc-lime);
 }
 
 .rc-trip-icon {
@@ -1288,43 +1313,13 @@ button.rc-trip {
   height: 16px;
 }
 
-/* Music, in portrait: who and where above, the title big, play or pause beside. */
-.rc-trip[data-kind='music'] {
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    'label detail'
-    'value detail';
-  align-items: center;
-}
-
-.rc-trip[data-kind='music'] .rc-trip-value {
-  overflow: hidden;
-  font-size: 1.55rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rc-trip[data-kind='music'] .rc-trip-detail {
-  display: grid;
-  place-items: center;
-  width: 3.4rem;
-  height: 3.4rem;
-  border-radius: 50%;
-  background: var(--rc-tile);
-  color: var(--rc-lime);
-}
-
-.rc-trip[data-kind='music'] .rc-trip-detail svg {
-  width: 22px;
-  height: 22px;
-}
-
 .rc-trip {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-areas:
     'value label detail'
-    'scale scale scale';
+    'scale scale scale'
+    'dots dots dots';
   align-items: baseline;
   column-gap: 0.9rem;
   padding: 0 calc(var(--rc-edge-right) + 0.5rem) 0 calc(var(--rc-edge-left) + 0.5rem);
@@ -1373,6 +1368,156 @@ button.rc-trip {
   background: var(--rc-lime);
 }
 
+/* Music, in portrait: the cover, who and what, and a car stereo's three keys. */
+.rc-trip[data-kind='music'] {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'art label keys'
+    'art value keys'
+    'dots dots dots';
+  align-items: center;
+  column-gap: 0.75rem;
+}
+
+.rc-trip-art {
+  grid-area: art;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--rc-tile);
+  color: var(--rc-lime);
+}
+
+.rc-trip-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rc-trip-art svg {
+  width: 22px;
+  height: 22px;
+}
+
+.rc-trip[data-kind='music'] .rc-trip-label {
+  align-self: end;
+  font-size: 0.82rem;
+}
+
+.rc-trip-label[data-tone='error'] {
+  color: #ff7a70;
+}
+
+.rc-trip[data-kind='music'] .rc-trip-value {
+  align-self: start;
+  overflow: hidden;
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rc-trip-keys {
+  grid-area: keys;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.rc-trip-skip,
+.rc-trip-play {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--rc-tile);
+  color: var(--rc-text);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 80ms ease;
+}
+
+.rc-trip-play {
+  width: 3.2rem;
+  height: 3.2rem;
+  background: var(--rc-lime);
+  color: #000;
+}
+
+.rc-trip-skip:active,
+.rc-trip-play:active {
+  transform: scale(0.92);
+}
+
+.rc-trip-skip svg {
+  width: 20px;
+  height: 20px;
+}
+
+.rc-trip-play svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Playing: three bars rising and falling, in lime, where the note icon was. */
+.rc-eq {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+  margin-right: 0.4rem;
+  vertical-align: -0.05em;
+}
+
+.rc-eq i {
+  width: 3px;
+  height: 100%;
+  border-radius: 1px;
+  background: var(--rc-lime);
+  transform-origin: bottom;
+  animation: rc-eq 900ms ease-in-out infinite;
+}
+
+.rc-eq i:nth-child(2) {
+  animation-delay: -300ms;
+}
+
+.rc-eq i:nth-child(3) {
+  animation-delay: -600ms;
+}
+
+@keyframes rc-eq {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-eq i {
+    animation: none;
+    transform: scaleY(0.7);
+  }
+}
+
+/* A narrow phone: the back key gives the song's name its room. */
+@media (orientation: portrait) and (max-width: 380px) {
+  .rc-trip-skip[data-dir='previous'] {
+    display: none;
+  }
+}
+
 @media (orientation: landscape) {
   .rc-trip {
     display: flex;
@@ -1407,26 +1552,102 @@ button.rc-trip {
     margin-top: 0.7rem;
   }
 
-  /* Music in the right dial, as the dash video has the radio there. */
+  /* Music in the right dial, as the dash video has the radio there: a song's cover is
+     the dial's face, darkened under the words; the keys along the bottom. Sized by the
+     dial, which is smaller on a small phone. */
+  .rc-trip[data-kind='music'] {
+    position: relative;
+    container-type: inline-size;
+    overflow: hidden;
+    padding: 0.9rem;
+  }
+
+  .rc-trip[data-kind='music'] > :not(.rc-trip-art) {
+    position: relative;
+    z-index: 1;
+  }
+
+  .rc-trip-art {
+    display: none;
+  }
+
+  .rc-trip-art[data-cover] {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: block;
+    width: auto;
+    height: auto;
+    border-radius: 50%;
+  }
+
+  .rc-trip-art[data-cover]::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.78) 72%);
+  }
+
+  .rc-trip[data-kind='music'] .rc-trip-label {
+    align-self: auto;
+    font-size: 0.78rem;
+  }
+
+  .rc-trip[data-kind='music'] .rc-trip-art[data-cover] ~ .rc-trip-label {
+    color: var(--rc-copy);
+  }
+
   .rc-trip[data-kind='music'] .rc-trip-value {
     display: -webkit-box;
     max-width: 100%;
-    font-size: clamp(1.1rem, 2.6vw, 1.5rem);
+    margin: 0.2rem 0 0.55rem;
+    font-size: clamp(1rem, 11cqw, 1.4rem);
     line-height: 1.15;
     white-space: normal;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
   }
 
-  .rc-trip[data-kind='music'] .rc-trip-detail {
-    width: 2.9rem;
-    height: 2.9rem;
-    margin-top: 0.5rem;
+  .rc-trip-keys {
+    gap: 0.25rem;
   }
 
-  button.rc-trip {
-    background: var(--rc-dial-face);
-    text-align: center;
+  /* Big enough for a glove even in a small dial: play and next first. */
+  .rc-trip-keys {
+    gap: 0.4rem;
+  }
+
+  .rc-trip-skip {
+    width: clamp(2.3rem, 22cqw, 2.9rem);
+    height: clamp(2.3rem, 22cqw, 2.9rem);
+    background: rgba(38, 39, 41, 0.85);
+  }
+
+  .rc-trip-play {
+    width: clamp(2.7rem, 28cqw, 3.5rem);
+    height: clamp(2.7rem, 28cqw, 3.5rem);
+  }
+
+  .rc-trip-dots {
+    margin-top: 0.45rem;
+  }
+
+  /* Most phones' dials: play and next. Back is a swipe away, on the Music screen. */
+  @container (max-width: 175px) {
+    .rc-trip-skip[data-dir='previous'] {
+      display: none;
+    }
+  }
+
+  /* A small phone's dial: the song's name and the keys. */
+  @container (max-width: 130px) {
+    .rc-trip[data-kind='music'] .rc-trip-label {
+      display: none;
+    }
+
+    .rc-trip[data-kind='music'] .rc-trip-value {
+      margin-top: 0;
+    }
   }
 }
 
@@ -2579,6 +2800,147 @@ button.rc-trip {
   font-size: 0.78rem;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* In the drawer, the apps on the Apps screen: a lime dot and their name lit. */
+.rc-app[data-picked] span {
+  color: var(--rc-lime);
+}
+
+.rc-app[data-picked] span::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 0.35em;
+  border-radius: 50%;
+  background: var(--rc-lime);
+  vertical-align: 0.12em;
+}
+
+/* Under the drawer's name: how to pick, and how many are picked. */
+.rc-page-head .rc-apps-count {
+  margin-top: 0.35rem;
+  color: var(--rc-muted);
+  font-size: 0.82rem;
+  white-space: normal;
+}
+
+.rc-apps-count b {
+  color: var(--rc-lime);
+  font-weight: 500;
+}
+
+/* The picked apps: a fixed set of big keys filling the screen, two across and four
+   down, or four across and two down in landscape. Fewer picks leave the rest empty,
+   so a key never moves or changes size as others are added. */
+.rc-picks-screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.rc-picks {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(5.6rem, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rc-picks > li {
+  display: grid;
+  min-width: 0;
+}
+
+.rc-picks-screen .rc-note[data-center] {
+  margin-top: 0.7rem;
+}
+
+.rc-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.6rem;
+  border: none;
+  border-radius: 24px;
+  background: var(--rc-tile);
+  color: var(--rc-text);
+  font: inherit;
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  transition: transform 80ms ease, background 150ms ease;
+}
+
+.rc-pick:active {
+  background: var(--rc-raised);
+  transform: scale(0.97);
+}
+
+.rc-pick img,
+.rc-pick i {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+}
+
+.rc-pick i {
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  background: var(--rc-raised);
+  color: var(--rc-lime);
+  font-size: 1.6rem;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.rc-pick span {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.95rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The key on to all the apps, while there's room for more: an outline, not a tile. */
+.rc-pick[data-add] {
+  border: 2px dashed var(--rc-raised);
+  background: none;
+  color: var(--rc-muted);
+}
+
+.rc-pick[data-add] i {
+  background: none;
+  color: var(--rc-muted);
+}
+
+.rc-pick[data-add] svg {
+  width: 28px;
+  height: 28px;
+}
+
+@media (orientation: landscape) {
+  .rc-picks {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(4.8rem, 1fr));
+  }
+
+  .rc-pick {
+    gap: 0.45rem;
+  }
+
+  .rc-pick img,
+  .rc-pick i {
+    width: 52px;
+    height: 52px;
+  }
 }
 
 

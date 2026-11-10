@@ -17,9 +17,10 @@ import {
   type SavedRoute,
   type TripStop,
 } from '../engine';
-import { device, loadKeepScreenOn, saveKeepScreenOn, type Layout } from '../device';
+import { device, loadKeepScreenOn, saveKeepScreenOn, type Layout, type PhoneApp } from '../device';
+import { pickNote, usePhoneApps } from '../apps';
 import { loadDashShows, saveDashShows, type DashShows } from '../dash';
-import { followMedia, togglePlay, useNowPlaying } from '../media';
+import { followMedia, useNowPlaying } from '../media';
 import { followCutout } from '../cutout';
 import { networkMark, useMediaQuery, usePhoneStatus } from '../status';
 import { useWeather } from '../weather';
@@ -38,6 +39,7 @@ import { ChooseLayout } from '../screens/ChooseLayout';
 import { GoPage, type GoPageHandle } from '../screens/GoPage';
 import { MusicPage } from '../screens/MusicPage';
 import { AppsPage } from '../screens/AppsPage';
+import { AllAppsPage } from '../screens/AllAppsPage';
 import { RidesPage } from '../screens/RidesPage';
 import { SettingsPage } from '../screens/SettingsPage';
 import { TripPage } from '../screens/TripPage';
@@ -56,10 +58,12 @@ const GO = 2;
 const RIDES = 3;
 /**
  * The dash's own column, swiped up and down as a phone's home screen is: settings pulled
- * down from above (row 0), the phone's apps swiped up from below.
+ * down from above (row 0); swiped up from below, the apps the rider picked, then every
+ * app, the drawer.
  */
 const DASH_ROW = 1;
 const APPS_ROW = 2;
+const ALL_APPS_ROW = 3;
 
 /** Left on another screen this long, the device goes back to the dash, like a watch to its face. */
 const RETURN_AFTER_MS = 30_000;
@@ -108,6 +112,8 @@ export function App() {
   const landscape = useMediaQuery('(orientation: landscape)');
   // Read again now and then while the dash shows, for the signal bars.
   const phoneStatus = usePhoneStatus(page === DASH && row === DASH_ROW);
+  // Read as the picked apps or the drawer come into view.
+  const phoneApps = usePhoneApps(page === DASH && row >= APPS_ROW);
   const navMode = nav.status === 'navigating' || nav.status === 'rerouting';
   const choosingRoute = nav.status === 'planning' || nav.status === 'choosing' || nav.status === 'error';
   const tripUnderway = navMode || nav.status === 'paused' || nav.status === 'arrived';
@@ -233,6 +239,16 @@ export function App() {
   const changeVoice = (on: boolean) => {
     voiceGuidance.setEnabled(on);
     setVoiceOn(on);
+  };
+
+  const openApp = (app: PhoneApp) => {
+    device.openApp({ packageName: app.packageName, activity: app.activity }).catch((e: unknown) => fail(e, "That app wouldn't open"));
+  };
+
+  /** Held, in either apps screen: on the picked ones, or off. */
+  const holdApp = (app: PhoneApp) => {
+    const { picks, change } = phoneApps.toggle(app);
+    setToast({ message: pickNote(app, change, picks.length), tone: change === 'full' ? 'error' : 'info' });
   };
 
   const runRide = (work: () => Promise<unknown>) => {
@@ -408,12 +424,7 @@ export function App() {
                 }
               />
               {dash && shows.trip ? (
-                <TripReadout
-                  core={core}
-                  media={shows.music ? media : null}
-                  weather={shows.weather ? weather : null}
-                  onMediaToggle={() => togglePlay(media)}
-                />
+                <TripReadout core={core} media={shows.music ? media : null} weather={shows.weather ? weather : null} />
               ) : null}
               {dash ? <StatusCorners place="cluster" {...marks} /> : null}
               {dash && !shows.speed && !shows.map && !shows.trip ? (
@@ -423,10 +434,14 @@ export function App() {
           </section>
 
           <AppsPage
+            phone={phoneApps}
+            onOpen={openApp}
+            onHold={holdApp}
+            onAll={() => columnRef.current?.show(ALL_APPS_ROW)}
             onBack={showDash}
-            active={page === DASH && row === APPS_ROW}
-            onNote={(message, tone) => setToast({ message, tone })}
           />
+
+          <AllAppsPage phone={phoneApps} onOpen={openApp} onHold={holdApp} onBack={() => columnRef.current?.show(APPS_ROW)} />
         </Pager>
 
         {tripUnderway ? (

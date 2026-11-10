@@ -14,9 +14,10 @@ interface PageProps {
   /**
    * A screen pulled over the dash (settings from above, the apps from below): a handle
    * on the edge toward the dash. It isn't part of the list, so a swipe on it always goes
-   * back, however long the list is; a tap does too.
+   * back, however long the list is; a tap does too. Labelled with where it goes: the
+   * dash, unless the screen is further out than that (all apps, past the picked ones).
    */
-  handle?: { edge: 'top' | 'bottom'; onBack: () => void };
+  handle?: { edge: 'top' | 'bottom'; label?: string; onBack: () => void };
   children: ReactNode;
 }
 
@@ -28,7 +29,7 @@ export function Page({ title, sub, subTone, top, fill, handle, children }: PageP
   const grip = handle ? (
     <button type="button" className="rc-handle" data-edge={handle.edge} onClick={handle.onBack}>
       <i aria-hidden />
-      <span>Dash</span>
+      <span>{handle.label ?? 'Dash'}</span>
     </button>
   ) : null;
   return (
